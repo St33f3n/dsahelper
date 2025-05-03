@@ -1,0 +1,160 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>{{ title }}</h2>
+    </div>
+</div>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control") }}
+                {% if form.name.errors %}
+                    <div class="text-danger">
+                        {% for error in form.name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.mut.label(class="form-label") }}
+                {{ form.mut(class="form-control") }}
+                {% if form.mut.errors %}
+                    <div class="text-danger">
+                        {% for error in form.mut.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.klugheit.label(class="form-label") }}
+                {{ form.klugheit(class="form-control") }}
+                {% if form.klugheit.errors %}
+                    <div class="text-danger">
+                        {% for error in form.klugheit.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.intuition.label(class="form-label") }}
+                {{ form.intuition(class="form-control") }}
+                {% if form.intuition.errors %}
+                    <div class="text-danger">
+                        {% for error in form.intuition.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.charisma.label(class="form-label") }}
+                {{ form.charisma(class="form-control") }}
+                {% if form.charisma.errors %}
+                    <div class="text-danger">
+                        {% for error in form.charisma.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.fingerfertigkeit.label(class="form-label") }}
+                {{ form.fingerfertigkeit(class="form-control") }}
+                {% if form.fingerfertigkeit.errors %}
+                    <div class="text-danger">
+                        {% for error in form.fingerfertigkeit.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.gewandtheit.label(class="form-label") }}
+                {{ form.gewandtheit(class="form-control") }}
+                {% if form.gewandtheit.errors %}
+                    <div class="text-danger">
+                        {% for error in form.gewandtheit.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.konstitution.label(class="form-label") }}
+                {{ form.konstitution(class="form-control") }}
+                {% if form.konstitution.errors %}
+                    <div class="text-danger">
+                        {% for error in form.konstitution.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.koerperkraft.label(class="form-label") }}
+                {{ form.koerperkraft(class="form-control") }}
+                {% if form.koerperkraft.errors %}
+                    <div class="text-danger">
+                        {% for error in form.koerperkraft.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-3">
+            <div class="form-group">
+                {{ form.be.label(class="form-label") }}
+                {{ form.be(class="form-control") }}
+                {% if form.be.errors %}
+                    <div class="text-danger">
+                        {% for error in form.be.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-12">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Abbrechen</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

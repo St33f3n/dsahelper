@@ -1,0 +1,151 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Talentprobe für {{ character.name }}</h2>
+    </div>
+    <div class="col text-end">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Zurück</a>
+    </div>
+</div>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Probe durchführen</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="form-group">
+                        {{ form.talent_id.label(class="form-label") }}
+                        {{ form.talent_id(class="form-select") }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-4">
+                    <div class="form-group">
+                        {{ form.w1.label(class="form-label") }}
+                        <input type="number" name="w1" class="form-control" min="1" max="20" value="{{ form.w1.data or '' }}">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-group">
+                        {{ form.w2.label(class="form-label") }}
+                        <input type="number" name="w2" class="form-control" min="1" max="20" value="{{ form.w2.data or '' }}">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-group">
+                        {{ form.w3.label(class="form-label") }}
+                        <input type="number" name="w3" class="form-control" min="1" max="20" value="{{ form.w3.data or '' }}">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <button type="submit" name="submit" class="btn btn-primary">Probe durchführen</button>
+                    <button type="submit" name="wuerfeln" value="1" class="btn btn-secondary">Würfeln</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% if result is not none %}
+<div class="card mb-4">
+    <div class="card-header {% if result %}{% if details.is_critical %}bg-info text-white{% else %}bg-success text-white{% endif %}{% else %}{% if details.is_critical %}bg-dark text-white{% else %}bg-danger text-white{% endif %}{% endif %}">
+        <h5 class="mb-0">
+            {% if result %}
+                {% if details.is_critical %}
+                    KRITISCHER ERFOLG!
+                {% else %}
+                    Probe bestanden!
+                {% endif %}
+            {% else %}
+                {% if details.is_critical %}
+                    KRITISCHER FEHLSCHLAG!
+                {% else %}
+                    Probe nicht bestanden!
+                {% endif %}
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        <h4 class="card-title">{{ details.talent.name }}</h4>
+        
+        <div class="row mb-3">
+            <div class="col-12">
+                <h5>Attribute:</h5>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Attribut</th>
+                            <th>Wert{% if details.be_applied %} (mit BE){% endif %}</th>
+                            <th>Würfelwurf</th>
+                            <th>Differenz</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="{% if details.attr1.diff > 0 %}table-danger{% else %}table-success{% endif %}">
+                            <td>{{ details.attr1.key }}</td>
+                            <td>{{ details.attr1.value }}</td>
+                            <td>{{ details.w1 }}</td>
+                            <td>{{ details.attr1.diff }}</td>
+                        </tr>
+                        <tr class="{% if details.attr2.diff > 0 %}table-danger{% else %}table-success{% endif %}">
+                            <td>{{ details.attr2.key }}</td>
+                            <td>{{ details.attr2.value }}</td>
+                            <td>{{ details.w2 }}</td>
+                            <td>{{ details.attr2.diff }}</td>
+                        </tr>
+                        <tr class="{% if details.attr3.diff > 0 %}table-danger{% else %}table-success{% endif %}">
+                            <td>{{ details.attr3.key }}</td>
+                            <td>{{ details.attr3.value }}</td>
+                            <td>{{ details.w3 }}</td>
+                            <td>{{ details.attr3.diff }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <h5>Zusammenfassung:</h5>
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr>
+                            <th>Gesamtdifferenz:</th>
+                            <td>{{ details.total_diff }}</td>
+                        </tr>
+                        <tr>
+                            <th>Talentwert (Basis):</th>
+                            <td>{{ details.talentwert }}</td>
+                        </tr>
+                        {% if details.be_applied %}
+                        <tr>
+                            <th>Behinderung (BE):</th>
+                            <td>{{ details.be }} (Faktor: {{ details.be_faktor }}, BE-Wert: {{ details.be_wert }})</td>
+                        </tr>
+                        <tr>
+                            <th>Effektiver Talentwert:</th>
+                            <td>{{ details.effektiver_talentwert }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr class="{% if result %}table-success{% else %}table-danger{% endif %}">
+                            <th>{% if result %}Übrige Punkte:{% else %}Fehlende Punkte:{% endif %}</th>
+                            <td>{{ details.remaining_points }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

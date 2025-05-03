@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>{{ title }} für {{ character.name }}</h2>
+    </div>
+</div>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control") }}
+                {% if form.name.errors %}
+                    <div class="text-danger">
+                        {% for error in form.name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-4">
+            <div class="form-group">
+                {{ form.attr1.label(class="form-label") }}
+                {{ form.attr1(class="form-select") }}
+                {% if form.attr1.errors %}
+                    <div class="text-danger">
+                        {% for error in form.attr1.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-group">
+                {{ form.attr2.label(class="form-label") }}
+                {{ form.attr2(class="form-select") }}
+                {% if form.attr2.errors %}
+                    <div class="text-danger">
+                        {% for error in form.attr2.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-group">
+                {{ form.attr3.label(class="form-label") }}
+                {{ form.attr3(class="form-select") }}
+                {% if form.attr3.errors %}
+                    <div class="text-danger">
+                        {% for error in form.attr3.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-4">
+            <div class="form-group">
+                {{ form.talentwert.label(class="form-label") }}
+                {{ form.talentwert(class="form-control") }}
+                {% if form.talentwert.errors %}
+                    <div class="text-danger">
+                        {% for error in form.talentwert.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-check mt-4">
+                {{ form.be_relevant(class="form-check-input") }}
+                {{ form.be_relevant.label(class="form-check-label") }}
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-group">
+                {{ form.be_faktor.label(class="form-label") }}
+                {{ form.be_faktor(class="form-control") }}
+                {% if form.be_faktor.errors %}
+                    <div class="text-danger">
+                        {% for error in form.be_faktor.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-12">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('character_talents', character_id=character.id) }}" class="btn btn-secondary">Abbrechen</a>
+        </div>
+    </div>
+</form>
+{% endblock %}
