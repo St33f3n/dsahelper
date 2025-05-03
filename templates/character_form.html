@@ -39,7 +39,222 @@
                 </div>
             </div>
 
+            <!-- Basis-Werte -->
+            <h5 class="mb-3"><i class="fas fa-heartbeat me-2"></i>Basiswerte</h5>
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.lp.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-heart"></i></span>
+                            {{ form.lp(class="form-control") }}
+                        </div>
+                        {% if form.lp.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.lp.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.ap.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-running"></i></span>
+                            {{ form.ap(class="form-control") }}
+                        </div>
+                        {% if form.ap.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.ap.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.op.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lungs"></i></span>
+                            {{ form.op(class="form-control") }}
+                        </div>
+                        {% if form.op.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.op.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.chi.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-yin-yang"></i></span>
+                            {{ form.chi(class="form-control") }}
+                        </div>
+                        {% if form.chi.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.chi.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.wundschwelle.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-band-aid"></i></span>
+                            {{ form.wundschwelle(class="form-control") }}
+                        </div>
+                        {% if form.wundschwelle.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.wundschwelle.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kampfwerte -->
+            <h5 class="mb-3"><i class="fas fa-swords me-2"></i>Kampfwerte</h5>
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.rs_wert.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
+                            {{ form.rs_wert(class="form-control") }}
+                        </div>
+                        {% if form.rs_wert.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.rs_wert.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.at_basis.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-fist-raised"></i></span>
+                            {{ form.at_basis(class="form-control") }}
+                        </div>
+                        {% if form.at_basis.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.at_basis.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.pa_basis.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-shield"></i></span>
+                            {{ form.pa_basis(class="form-control") }}
+                        </div>
+                        {% if form.pa_basis.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.pa_basis.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.initiative.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-bolt"></i></span>
+                            {{ form.initiative(class="form-control") }}
+                        </div>
+                        {% if form.initiative.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.initiative.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.damage.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-tint"></i></span>
+                            {{ form.damage(class="form-control") }}
+                        </div>
+                        {% if form.damage.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.damage.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.wunden.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-first-aid"></i></span>
+                            {{ form.wunden(class="form-control") }}
+                        </div>
+                        {% if form.wunden.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.wunden.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.be.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-wheelchair"></i></span>
+                            {{ form.be(class="form-control") }}
+                        </div>
+                        {% if form.be.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.be.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             <!-- Attribute Row 1 -->
+            <h5 class="mb-3"><i class="fas fa-gem me-2"></i>Attribute</h5>
             <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="form-group">
@@ -58,7 +273,6 @@
                     </div>
                 </div>
                 
-                <!-- Repeat similar blocks for other attributes -->
                 <div class="col-md-3">
                     <div class="form-group">
                         {{ form.klugheit.label(class="form-label") }}
@@ -174,26 +388,6 @@
                         {% if form.koerperkraft.errors %}
                             <div class="text-danger mt-1">
                                 {% for error in form.koerperkraft.errors %}
-                                    <small>{{ error }}</small>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- BE Field -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        {{ form.be.label(class="form-label") }}
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-wheelchair"></i></span>
-                            {{ form.be(class="form-control") }}
-                        </div>
-                        {% if form.be.errors %}
-                            <div class="text-danger mt-1">
-                                {% for error in form.be.errors %}
                                     <small>{{ error }}</small>
                                 {% endfor %}
                             </div>

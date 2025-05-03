@@ -21,6 +21,7 @@ class Character(db.Model):
     lp = db.Column(db.Integer, nullable=False)
     ap = db.Column(db.Integer, nullable=False)
     op = db.Column(db.Integer, nullable=False)
+    chi = db.Column(db.Integer, nullable=False, default=0)  # Neue Spalte für Chi-Punkte
     rs_wert = db.Column(db.Integer, nullable=False)
     pa_basis = db.Column(db.Integer, nullable=False)
     at_basis = db.Column(db.Integer, nullable=False)
@@ -76,6 +77,17 @@ class CombatSkill(db.Model):
 # Formulare
 class CharacterForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
+    lp = IntegerField('Lebenspunkte (LP)', validators=[DataRequired(), NumberRange(min=1)])
+    ap = IntegerField('Ausdauerpunkte (AP)', validators=[DataRequired(), NumberRange(min=0)])
+    op = IntegerField('Odempunkte (OP)', validators=[NumberRange(min=0)], default=0)
+    chi = IntegerField('Chi-Punkte', validators=[NumberRange(min=0)], default=0)
+    rs_wert = IntegerField('Rüstungsschutz (RS)', validators=[NumberRange(min=0)], default=0)
+    pa_basis = IntegerField('Parade-Basiswert (PA)', validators=[DataRequired(), NumberRange(min=0)], default=6)
+    at_basis = IntegerField('Attacke-Basiswert (AT)', validators=[DataRequired(), NumberRange(min=0)], default=6)
+    wundschwelle = IntegerField('Wundschwelle', validators=[DataRequired(), NumberRange(min=1)])
+    damage = IntegerField('Erhaltener Schaden', validators=[NumberRange(min=0)], default=0)
+    wunden = IntegerField('Wunden', validators=[NumberRange(min=0)], default=0)
+    initiative = IntegerField('Initiative (INI)', validators=[DataRequired(), NumberRange(min=1)])
     mut = IntegerField('Mut (MU)', validators=[DataRequired(), NumberRange(min=1, max=30)])
     klugheit = IntegerField('Klugheit (KL)', validators=[DataRequired(), NumberRange(min=1, max=30)])
     intuition = IntegerField('Intuition (IN)', validators=[DataRequired(), NumberRange(min=1, max=30)])
@@ -139,9 +151,23 @@ def index():
 @app.route('/character/new', methods=['GET', 'POST'])
 def new_character():
     form = CharacterForm()
+    
+    # Wenn das Formular abgesendet wird
     if form.validate_on_submit():
+        # Erstelle den Charakter
         character = Character(
             name=form.name.data,
+            lp=form.lp.data,
+            ap=form.ap.data,
+            op=form.op.data,
+            chi=form.chi.data,
+            rs_wert=form.rs_wert.data,
+            pa_basis=form.pa_basis.data,
+            at_basis=form.at_basis.data,
+            wundschwelle=form.wundschwelle.data,
+            damage=0,  # Default immer 0
+            wunden=0,  # Default immer 0
+            initiative=form.initiative.data,
             mut=form.mut.data,
             klugheit=form.klugheit.data,
             intuition=form.intuition.data,
@@ -156,6 +182,7 @@ def new_character():
         db.session.commit()
         flash(f'Charakter "{character.name}" wurde erstellt!', 'success')
         return redirect(url_for('index'))
+    
     return render_template('character_form.html', form=form, title='Neuer Charakter')
 
 @app.route('/character/<int:character_id>/edit', methods=['GET', 'POST'])
@@ -163,9 +190,23 @@ def edit_character(character_id):
     character = db.session.get(Character, character_id)
     if character is None:
         abort(404)  # Manuelles Werfen eines 404-Fehlers
+    
     form = CharacterForm(obj=character)
+    
+    # Wenn das Formular abgesendet wird
     if form.validate_on_submit():
         character.name = form.name.data
+        character.lp = form.lp.data
+        character.ap = form.ap.data
+        character.op = form.op.data
+        character.chi = form.chi.data
+        character.rs_wert = form.rs_wert.data
+        character.pa_basis = form.pa_basis.data
+        character.at_basis = form.at_basis.data
+        character.wundschwelle = form.wundschwelle.data
+        character.damage = form.damage.data
+        character.wunden = form.wunden.data
+        character.initiative = form.initiative.data
         character.mut = form.mut.data
         character.klugheit = form.klugheit.data
         character.intuition = form.intuition.data
@@ -175,9 +216,11 @@ def edit_character(character_id):
         character.konstitution = form.konstitution.data
         character.koerperkraft = form.koerperkraft.data
         character.be = form.be.data
+        
         db.session.commit()
         flash(f'Charakter "{character.name}" wurde aktualisiert!', 'success')
         return redirect(url_for('index'))
+        
     return render_template('character_form.html', form=form, title='Charakter bearbeiten')
 
 @app.route('/character/<int:character_id>/delete')

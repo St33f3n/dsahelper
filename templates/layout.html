@@ -287,6 +287,66 @@
             margin-bottom: 0.5rem;
         }
         
+        /* Zusätzliche Styling für die Charakterkarten */
+        .character-card {
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .character-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card {
+            height: 100%;
+            margin-bottom: 0;
+        }
+
+        .stat-card .card-header {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .stat-card .card-body {
+            padding: 0.75rem 1rem;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            background-color: rgba(124, 90, 63, 0.1);
+            border-radius: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .attribute-card .card-body {
+            padding: 0.75rem 1rem;
+        }
+
+        .attribute-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .attribute-value {
+            flex: 0 0 auto;
+            margin-right: 0.75rem;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+            white-space: nowrap;
+            padding: 0.15rem 0.5rem;
+            background-color: rgba(124, 90, 63, 0.1);
+            border-radius: 0.25rem;
+        }
+        
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .container {
@@ -299,6 +359,14 @@
             
             .btn {
                 padding: 0.5rem 1rem;
+            }
+            
+            .attribute-section {
+                justify-content: flex-start;
+            }
+            
+            .attribute-value {
+                flex: 0 0 40%;
             }
         }
     </style>

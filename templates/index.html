@@ -13,9 +13,9 @@
 {% if characters %}
     <div class="list-group mb-4">
         {% for character in characters %}
-            <div class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between align-items-center">
-                    <h5 class="mb-1">{{ character.name }}</h5>
+            <div class="list-group-item list-group-item-action character-card">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">{{ character.name }}</h5>
                     <div>
                         <a href="{{ url_for('probe', character_id=character.id) }}" class="btn btn-success btn-sm">Probe</a>
                         <a href="{{ url_for('character_talents', character_id=character.id) }}" class="btn btn-info btn-sm">Talente</a>
@@ -29,25 +29,82 @@
                         <a href="{{ url_for('delete_character', character_id=character.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Charakter wirklich löschen?')">Löschen</a>
                     </div>
                 </div>
-                <div class="row mt-2">
-                    <div class="col-6">
-                        <small>
-                            <b>MU:</b> {{ character.mut }} | 
-                            <b>KL:</b> {{ character.klugheit }} | 
-                            <b>IN:</b> {{ character.intuition }} | 
-                            <b>CH:</b> {{ character.charisma }}
-                        </small>
+                
+                <!-- Alle Wertekarten in einer Zeile mit gleicher Höhe -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="card-header py-2 px-3 d-flex align-items-center">
+                                <i class="fas fa-heartbeat me-2"></i>Basiswerte
+                            </div>
+                            <div class="card-body py-2 px-3">
+                                <div class="d-flex flex-wrap">
+                                    <span class="stat-value">LP: {{ character.lp }}</span>
+                                    <span class="stat-value">AP: {{ character.ap }}</span>
+                                    <span class="stat-value">OP: {{ character.op }}</span>
+                                    <span class="stat-value">Chi: {{ character.chi }}</span>
+                                    <span class="stat-value">WS: {{ character.wundschwelle }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6">
-                        <small>
-                            <b>FF:</b> {{ character.fingerfertigkeit }} | 
-                            <b>GE:</b> {{ character.gewandtheit }} | 
-                            <b>KO:</b> {{ character.konstitution }} | 
-                            <b>KK:</b> {{ character.koerperkraft }}
-                        </small>
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="card-header py-2 px-3 d-flex align-items-center">
+                                <i class="fas fa-swords me-2"></i>Kampfwerte
+                            </div>
+                            <div class="card-body py-2 px-3">
+                                <div class="d-flex flex-wrap">
+                                    <span class="stat-value">AT: {{ character.at_basis }}</span>
+                                    <span class="stat-value">PA: {{ character.pa_basis }}</span>
+                                    <span class="stat-value">RS: {{ character.rs_wert }}</span>
+                                    <span class="stat-value">INI: {{ character.initiative }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card">
+                            <div class="card-header py-2 px-3 d-flex align-items-center">
+                                <i class="fas fa-skull me-2"></i>Zustand
+                            </div>
+                            <div class="card-body py-2 px-3">
+                                <div class="d-flex flex-wrap">
+                                    <span class="stat-value">Schaden: {{ character.damage }}</span>
+                                    <span class="stat-value">Wunden: {{ character.wunden }}</span>
+                                    <span class="stat-value">BE: {{ character.be }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <small class="text-muted">BE: {{ character.be }}</small>
+                
+                <!-- Attribute in einer Karte -->
+                <div class="card attribute-card">
+                    <div class="card-header py-2 px-3 d-flex align-items-center">
+                        <i class="fas fa-gem me-2"></i>Attribute
+                    </div>
+                    <div class="card-body py-2 px-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="attribute-section">
+                                    <span class="attribute-value">MU: {{ character.mut }}</span>
+                                    <span class="attribute-value">KL: {{ character.klugheit }}</span>
+                                    <span class="attribute-value">IN: {{ character.intuition }}</span>
+                                    <span class="attribute-value">CH: {{ character.charisma }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="attribute-section">
+                                    <span class="attribute-value">FF: {{ character.fingerfertigkeit }}</span>
+                                    <span class="attribute-value">GE: {{ character.gewandtheit }}</span>
+                                    <span class="attribute-value">KO: {{ character.konstitution }}</span>
+                                    <span class="attribute-value">KK: {{ character.koerperkraft }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         {% endfor %}
     </div>
