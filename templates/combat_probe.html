@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-dice me-2"></i>Kampfprobe für {{ character.name }}</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('character_combat_skills', character_id=character.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="mb-3">
+        {{ form.skill_id.label(class="form-label") }}
+        {{ form.skill_id(class="form-select") }}
+      </div>
+      <div class="mb-3">
+        {{ form.wert_typ.label(class="form-label") }}
+        {{ form.wert_typ(class="form-select") }}
+      </div>
+      <div class="form-group">
+        {{ form.w1.label(class="form-label") }}
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-dice-three"></i></span>
+            <input type="number" name="w1" class="form-control" min="1" max="20" value="{{ form.w1.data or '' }}">
+        </div>
+    </div>
+      <div class="mb-3">
+        {{ form.erschwernis.label(class="form-label") }}
+        {{ form.erschwernis(class="form-control") }}
+      </div>
+      <div class="d-flex justify-content-between">
+        <button type="submit" name="wuerfeln" value="1" class="btn btn-secondary">
+                        <i class="fas fa-random me-1"></i> Würfeln
+                    </button>
+        <button type="submit" name="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if result is not none %}
+<div class="card mb-4">
+  <div class="card-header {% if result.success %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+    <h5 class="mb-0">
+      {% if result.success %}
+        {% if result.is_critical %}
+          <i class="fas fa-star me-2"></i> Kritischer Erfolg!
+        {% else %}
+          <i class="fas fa-check-circle me-2"></i> Aktion erfolgreich!
+        {% endif %}
+      {% else %}
+        {% if result.is_critical %}
+          <i class="fas fa-skull-crossbones me-2"></i> Kritischer Fehlschlag!
+        {% else %}
+          <i class="fas fa-times-circle me-2"></i> Aktion fehlgeschlagen!
+        {% endif %}
+      {% endif %}
+    </h5>
+  </div>
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-4">Gewürfelter Wert</dt><dd class="col-sm-8">{{ details.wuerfel }}</dd>
+      <dt class="col-sm-4">Typ</dt><dd class="col-sm-8">{{ details.wert_typ }}</dd>
+      <dt class="col-sm-4">Erschwernis</dt><dd class="col-sm-8">{{ details.erschwernis }}</dd>
+      <dt class="col-sm-4">Übrige Punkte</dt><dd class="col-sm-8">{{ details.diff}}</dd>
+
+    </dl>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2>{{ title }} für {{ character.name }}</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('character_combat_skills', character_id=character.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>{{ title }}</h5>
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+      </div>
+      <div class="mb-3">
+        {{ form.attack.label(class="form-label") }}
+        {{ form.attack(class="form-control") }}
+      </div>
+      <div class="mb-3">
+        {{ form.parade.label(class="form-label") }}
+        {{ form.parade(class="form-control") }}
+      </div>
+      <div class="mb-3 form-check">
+        {{ form.be_relevant(class="form-check-input") }}
+        {{ form.be_relevant.label(class="form-check-label") }}
+      </div>
+      <div class="mb-3">
+        {{ form.be_faktor.label(class="form-label") }}
+        {{ form.be_faktor(class="form-control") }}
+      </div>
+      <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

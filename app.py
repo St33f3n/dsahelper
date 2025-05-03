@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import select
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, SelectMultipleField, BooleanField, SubmitField
+from wtforms import StringField, IntegerField, SelectField, SelectMultipleField,Form, BooleanField, SubmitField
 from wtforms.validators import DataRequired, NumberRange
 import random
 import os
@@ -11,6 +12,7 @@ app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dsa_proben.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
 
 # Modelle
 class Character(db.Model):
@@ -51,6 +53,16 @@ class Talent(db.Model):
     be_faktor = db.Column(db.String(10), default="1")  # Faktor als String, z.B. "2" für *2 oder "+2" für absolut
     character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
 
+class CombatSkill(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    attack = db.Column(db.Integer, nullable=False)
+    parade = db.Column(db.Integer, nullable=False)
+    be_relevant = db.Column(db.Boolean, default=False)
+    be_faktor = db.Column(db.String(10), default="1")
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
+
+
 # Formulare
 class CharacterForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
@@ -90,6 +102,23 @@ class ProbeForm(FlaskForm):
     w2 = IntegerField('Würfel 2 (1-20)', validators=[NumberRange(min=1, max=20)])
     w3 = IntegerField('Würfel 3 (1-20)', validators=[NumberRange(min=1, max=20)])
     submit = SubmitField('Probe durchführen')
+
+class CombatSkillForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    attack = IntegerField('Attackwert', validators=[NumberRange(min=0)])
+    parade = IntegerField('Paradewert', validators=[NumberRange(min=0)])
+    be_relevant = BooleanField('BE relevant')
+    be_faktor = StringField('BE-Faktor', default="1")
+    submit = SubmitField('Speichern')
+
+class CombatProbeForm(FlaskForm):
+    skill_id = SelectField('Kampffähigkeit', coerce=int)
+    wert_typ = SelectField('Typ', choices=[('attacke', 'Angriff'), ('parade', 'Parade')])
+    w1 = IntegerField('Würfel (1-20)', validators=[NumberRange(min=1, max=20)])
+    erschwernis = IntegerField('Erschwernis', default=0)
+    submit = SubmitField('Probe durchführen')
+
+
 
 # Routen
 @app.route('/')
@@ -219,7 +248,10 @@ def probe(character_id):
     character = db.session.get(Character, character_id)
     if character is None:
         abort(404)
-    talents = Talent.query.filter_by(character_id=character_id).all()
+    
+    s = select(Talent).where(Talent.character_id == character_id)
+    talents = db.session.execute(s).scalars().all() 
+    #talents = Talent.query.filter_by(character_id=character_id).all()
     
     form = ProbeForm()
     form.talent_id.choices = [(t.id, t.name) for t in talents]
@@ -374,6 +406,193 @@ def probe(character_id):
             }
     
     return render_template('probe.html', form=form, character=character, result=result, details=details)
+
+# Liste der Kampffähigkeiten für einen Charakter
+@app.route('/character/<int:character_id>/combat_skills')
+def character_combat_skills(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    skills = CombatSkill.query.filter_by(character_id=character_id).all()
+    return render_template('combat_skills.html', character=character, combat_skills=skills)
+
+# Neue Kampffähigkeit anlegen
+@app.route('/character/<int:character_id>/combat_skill/new', methods=['GET', 'POST'])
+def new_combat_skill(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    form = CombatSkillForm()
+    if form.validate_on_submit():
+        cs = CombatSkill(
+            name=form.name.data,
+            attack=form.attack.data,
+            parade=form.parade.data,
+            be_relevant=form.be_relevant.data,
+            be_faktor=form.be_faktor.data,
+            character_id=character_id
+        )
+        db.session.add(cs)
+        db.session.commit()
+        flash(f'Kampffähigkeit "{cs.name}" wurde hinzugefügt!', 'success')
+        return redirect(url_for('character_combat_skills', character_id=character_id))
+    return render_template('combat_skill_form.html', form=form, character=character, title='Neue Kampffähigkeit')
+
+# Kampffähigkeit bearbeiten
+@app.route('/combat_skill/<int:skill_id>/edit', methods=['GET', 'POST'])
+def edit_combat_skill(skill_id):
+    cs = db.session.get(CombatSkill, skill_id)
+    if cs is None:
+        abort(404)
+    form = CombatSkillForm(obj=cs)
+    if form.validate_on_submit():
+        cs.name = form.name.data
+        cs.attack = form.attack.data
+        cs.parade = form.parade.data
+        cs.be_relevant = form.be_relevant.data
+        cs.be_faktor = form.be_faktor.data
+        db.session.commit()
+        flash(f'Kampffähigkeit "{cs.name}" wurde aktualisiert!', 'success')
+        return redirect(url_for('character_combat_skills', character_id=cs.character_id))
+    return render_template('combat_skill_form.html', form=form, character=cs.character, title='Kampffähigkeit bearbeiten')
+
+# Kampffähigkeit löschen
+@app.route('/combat_skill/<int:skill_id>/delete')
+def delete_combat_skill(skill_id):
+    cs = db.session.get(CombatSkill, skill_id)
+    if cs is None:
+        abort(404)
+    character_id = cs.character_id
+    name = cs.name
+    db.session.delete(cs)
+    db.session.commit()
+    flash(f'Kampffähigkeit "{name}" wurde gelöscht!', 'success')
+    return redirect(url_for('character_combat_skills', character_id=character_id))
+
+
+# Zusätzliche Route für Combat-Proben
+@app.route('/character/<int:character_id>/combat_probe', methods=['GET', 'POST'])
+def combat_probe(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    
+    form = CombatProbeForm()
+
+    s = select(CombatSkill).where(CombatSkill.character_id == character_id)
+    combat_skills = db.session.execute(s).scalars().all() 
+    
+    form.skill_id.choices = [(cs.id, cs.name) for cs in combat_skills]
+    
+    result = None
+    details = None
+    
+    
+    if not combat_skills:
+        flash('Füge zuerst eine Kampffähigkeit für diesen Charakter hinzu!', 'warning')
+        return redirect(url_for('character_combat_skills', character_id=character_id))
+    
+    # Initialisiere Würfelwert mit Default
+    if not form.w1.data:
+        form.w1.data = 10
+    
+    if request.method == 'POST':
+        # Speichere das ausgewählte Talent
+        skill = request.form.get('skill_id')
+        if skill:
+            form.skill_id.data = int(skill)
+        # Würfel-Generierung
+        if 'wuerfeln' in request.form:
+            w1 = random.randint(1, 20)
+            form.w1.data = w1
+            flash(f'Gewürfelt: {w1}', 'info')
+            return render_template('combat_probe.html', 
+                                form=form, 
+                                character=character, 
+                                result=None, 
+                                details=None)
+    
+    if form.validate_on_submit() and 'submit' in request.form:
+        skill = db.session.get(CombatSkill, skill)
+        if not skill:
+            flash('Kampffähigkeit nicht gefunden', 'error')
+            return redirect(url_for('combat_probe', character_id=character_id))
+        
+        typ = ""
+        # Basiswert bestimmen (Angriff oder Parade)
+        if form.wert_typ.data == 'attacke':
+            basiswert = skill.attack
+            typ = "Angriff"
+        else:
+            basiswert = skill.parade
+            typ = "Verteidigung"
+        
+        # BE-Berechnung
+        be_wert = 0
+        be_faktor = skill.be_faktor or "1"
+        if skill.be_relevant and character.be > 0:
+            if be_faktor.startswith(('+', '-')):
+                try:
+                    be_wert = max(0,character.be + int(be_faktor))
+                except ValueError:
+                    be_wert = character.be
+            else:
+                try:
+                    be_wert = character.be * int(be_faktor)
+                except ValueError:
+                    be_wert = character.be
+        
+        # Effektiver Basiswert
+        effektiv_basis = max(0, basiswert - be_wert)
+        
+        # Erschwernis verarbeiten
+        erschwernis = form.erschwernis.data or 0
+        effektiver_wert = max(0, effektiv_basis - erschwernis)
+        
+        # Probe auswerten
+        wuerfel = form.w1.data
+        success = wuerfel <= effektiver_wert
+        
+
+        # Kritische Ergebnisse
+        is_critical_success = wuerfel == 1
+        is_critical_failure = wuerfel == 20
+        
+        if is_critical_failure:
+            wuerfel = random.randint(1,20)
+            is_critical_failure = wuerfel > effektiver_wert
+        else:
+            is_critical_failure = False 
+
+        if is_critical_success:
+            wuerfel = random.randint(1,20)
+            is_critical_success = wuerfel <= effektiver_wert
+        else:
+            is_critical_success = False
+
+
+        details = {
+            'skill': skill,
+            'wert_typ': typ,
+            'erschwernis': erschwernis,
+            'wuerfel': wuerfel,
+            "diff": effektiver_wert
+
+        }
+        
+        result = {
+            'success': success,
+            'message': 'Erfolg!' if success else 'Fehlschlag!',
+            'is_critical': is_critical_success or is_critical_failure
+        }
+    
+    return render_template('combat_probe.html',
+                         form=form,
+                         character=character,
+                         result=result,
+                         details=details)
+
 
 @app.route('/init_db')
 def init_db():
