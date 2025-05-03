@@ -2,71 +2,211 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h2><i class="fas fa-users me-2"></i>Charaktere</h2>
+        <h2><i class="fas fa-users me-2"></i>{{ title }}</h2>
     </div>
     <div class="col text-end">
-        <a href="{{ url_for('new_character') }}" class="btn btn-primary">
-            <i class="fas fa-user-plus me-1"></i> Neuer Charakter
-        </a>
-        <a href="{{ url_for('init_db') }}" class="btn btn-outline-secondary btn-sm ms-2">
-            <i class="fas fa-database me-1"></i> DB initialisieren
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Zurück
         </a>
     </div>
 </div>
 
-{% if characters %}
-    <div class="row">
-        {% for character in characters %}
-            <div class="col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">{{ character.name }}</h5>
-                        <span class="badge bg-secondary">BE: {{ character.be }}</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <h6 class="text-muted mb-2">Attribute</h6>
-                                <div>
-                                    <span class="character-attribute" title="Mut"><i class="fas fa-fist-raised me-1"></i> MU: {{ character.mut }}</span>
-                                    <span class="character-attribute" title="Klugheit"><i class="fas fa-brain me-1"></i> KL: {{ character.klugheit }}</span>
-                                    <span class="character-attribute" title="Intuition"><i class="fas fa-lightbulb me-1"></i> IN: {{ character.intuition }}</span>
-                                    <span class="character-attribute" title="Charisma"><i class="fas fa-comments me-1"></i> CH: {{ character.charisma }}</span>
-                                </div>
-                                <div class="mt-2">
-                                    <span class="character-attribute" title="Fingerfertigkeit"><i class="fas fa-hand-paper me-1"></i> FF: {{ character.fingerfertigkeit }}</span>
-                                    <span class="character-attribute" title="Gewandtheit"><i class="fas fa-running me-1"></i> GE: {{ character.gewandtheit }}</span>
-                                    <span class="character-attribute" title="Konstitution"><i class="fas fa-heartbeat me-1"></i> KO: {{ character.konstitution }}</span>
-                                    <span class="character-attribute" title="Körperkraft"><i class="fas fa-dumbbell me-1"></i> KK: {{ character.koerperkraft }}</span>
-                                </div>
-                            </div>
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Charakterdaten</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <!-- Name Field -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="form-group">
+                        {{ form.name.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            {{ form.name(class="form-control") }}
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <a href="{{ url_for('probe', character_id=character.id) }}" class="btn btn-success btn-sm">
-                                    <i class="fas fa-dice me-1"></i> Probe
-                                </a>
-                                <a href="{{ url_for('character_talents', character_id=character.id) }}" class="btn btn-info btn-sm text-white">
-                                    <i class="fas fa-list-alt me-1"></i> Talente
-                                </a>
+                        {% if form.name.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.name.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
                             </div>
-                            <div>
-                                <a href="{{ url_for('edit_character', character_id=character.id) }}" class="btn btn-warning btn-sm text-white">
-                                    <i class="fas fa-edit me-1"></i> Bearbeiten
-                                </a>
-                                <a href="{{ url_for('delete_character', character_id=character.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Charakter wirklich löschen?')">
-                                    <i class="fas fa-trash-alt me-1"></i> Löschen
-                                </a>
-                            </div>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-        {% endfor %}
+
+            <!-- Attribute Row 1 -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.mut.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-fist-raised"></i></span>
+                            {{ form.mut(class="form-control") }}
+                        </div>
+                        {% if form.mut.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.mut.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Repeat similar blocks for other attributes -->
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.klugheit.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-brain"></i></span>
+                            {{ form.klugheit(class="form-control") }}
+                        </div>
+                        {% if form.klugheit.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.klugheit.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.intuition.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lightbulb"></i></span>
+                            {{ form.intuition(class="form-control") }}
+                        </div>
+                        {% if form.intuition.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.intuition.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.charisma.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-comments"></i></span>
+                            {{ form.charisma(class="form-control") }}
+                        </div>
+                        {% if form.charisma.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.charisma.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attribute Row 2 -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.fingerfertigkeit.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-hand-paper"></i></span>
+                            {{ form.fingerfertigkeit(class="form-control") }}
+                        </div>
+                        {% if form.fingerfertigkeit.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.fingerfertigkeit.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.gewandtheit.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-running"></i></span>
+                            {{ form.gewandtheit(class="form-control") }}
+                        </div>
+                        {% if form.gewandtheit.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.gewandtheit.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.konstitution.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-heartbeat"></i></span>
+                            {{ form.konstitution(class="form-control") }}
+                        </div>
+                        {% if form.konstitution.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.konstitution.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.koerperkraft.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-dumbbell"></i></span>
+                            {{ form.koerperkraft(class="form-control") }}
+                        </div>
+                        {% if form.koerperkraft.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.koerperkraft.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- BE Field -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {{ form.be.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-wheelchair"></i></span>
+                            {{ form.be(class="form-control") }}
+                        </div>
+                        {% if form.be.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.be.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid gap-2">
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+        </form>
     </div>
-{% else %}
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle me-2"></i> Noch keine Charaktere vorhanden. Erstelle einen neuen Charakter, um zu beginnen.
-    </div>
-{% endif %}
+</div>
 {% endblock %}
