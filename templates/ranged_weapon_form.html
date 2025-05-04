@@ -1,0 +1,189 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-bow-arrow me-2"></i>{{ title }}</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('character_weapons', character_id=character.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">Fernkampfwaffe</h5>
+    </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.name.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-tag"></i></span>
+              {{ form.name(class="form-control") }}
+            </div>
+            {% if form.name.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.name.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.tp.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-dice"></i></span>
+              {{ form.tp(class="form-control") }}
+            </div>
+            {% if form.tp.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.tp.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.reichweite.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-bullseye"></i></span>
+              {{ form.reichweite(class="form-control") }}
+            </div>
+            {% if form.reichweite.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.reichweite.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.tp_mod_entfernung.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-ruler"></i></span>
+              {{ form.tp_mod_entfernung(class="form-control") }}
+            </div>
+            {% if form.tp_mod_entfernung.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.tp_mod_entfernung.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <div class="form-group">
+            {{ form.be.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-weight-hanging"></i></span>
+              {{ form.be(class="form-control") }}
+            </div>
+            {% if form.be.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.be.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            {{ form.ladezeit_einzeln.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
+              {{ form.ladezeit_einzeln(class="form-control") }}
+            </div>
+            {% if form.ladezeit_einzeln.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.ladezeit_einzeln.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            {{ form.ladezeit_magazin.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-sync"></i></span>
+              {{ form.ladezeit_magazin(class="form-control") }}
+            </div>
+            <small class="text-muted">Leer lassen, wenn kein Magazin</small>
+            {% if form.ladezeit_magazin.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.ladezeit_magazin.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.munition_aktuell.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-tachometer-alt"></i></span>
+              {{ form.munition_aktuell(class="form-control") }}
+            </div>
+            {% if form.munition_aktuell.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.munition_aktuell.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.munition_max.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-tachometer"></i></span>
+              {{ form.munition_max(class="form-control") }}
+            </div>
+            {% if form.munition_max.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.munition_max.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-check mb-3">
+        {{ form.equipped(class="form-check-input") }}
+        {{ form.equipped.label(class="form-check-label") }}
+      </div>
+
+      <div class="d-grid gap-2">
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -39,6 +39,9 @@ class Character(db.Model):
     koerperkraft = db.Column(db.Integer, nullable=False)
     be = db.Column(db.Integer, default=0)
     talente = db.relationship('Talent', backref='character', lazy=True, cascade="all, delete-orphan")
+    melee_weapons = db.relationship('MeleeWeapon', backref='character', lazy=True, cascade="all, delete-orphan")
+    ranged_weapons = db.relationship('RangedWeapon', backref='character', lazy=True, cascade="all, delete-orphan")
+    parry_weapons = db.relationship('ParryWeapon', backref='character', lazy=True, cascade="all, delete-orphan")
 
     def get_attribute(self, attr_key):
         attr_map = {
@@ -72,6 +75,41 @@ class CombatSkill(db.Model):
     be_relevant = db.Column(db.Boolean, default=False)
     be_faktor = db.Column(db.String(10), default="1")
     character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
+
+# Waffenmodelle für die Datenbank
+class Weapon(db.Model):
+    __abstract__ = True
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
+    equipped = db.Column(db.Boolean, default=False)
+
+class MeleeWeapon(Weapon):
+    __tablename__ = 'melee_weapon'
+    be = db.Column(db.Integer, default=0)  # Behinderung
+    tp = db.Column(db.String(20), nullable=False)  # z.B. "1W6+4"
+    tp_kk_schwelle = db.Column(db.Integer, default=0)  # Ab welcher KK gibt es Bonus
+    tp_kk_schritt = db.Column(db.Integer, default=0)  # Nach wie vielen Punkten über der Schwelle +1 TP
+    ini_mod = db.Column(db.Integer, default=0)  # Initiative-Modifikator
+    at_mod = db.Column(db.Integer, default=0)  # Attacke-Modifikator
+    pa_mod = db.Column(db.Integer, default=0)  # Parade-Modifikator
+
+class RangedWeapon(Weapon):
+    __tablename__ = 'ranged_weapon'
+    be = db.Column(db.Integer, default=0)  # Behinderung
+    tp = db.Column(db.String(20), nullable=False)  # z.B. "1W6+4"
+    reichweite = db.Column(db.String(50), nullable=False)  # z.B. "5/10/15/25/40"
+    tp_mod_entfernung = db.Column(db.String(50), nullable=False)  # z.B. "+2/+1/0/-1/-3"
+    ladezeit_einzeln = db.Column(db.Integer, default=1)  # Ladezeit innerhalb eines Magazins
+    ladezeit_magazin = db.Column(db.Integer, nullable=True)  # Ladezeit für Magazinwechsel, NULL wenn kein Magazin
+    munition_aktuell = db.Column(db.Integer, default=0)  # Aktuelle Munition
+    munition_max = db.Column(db.Integer, default=0)  # Maximale Munition
+
+class ParryWeapon(Weapon):
+    __tablename__ = 'parry_weapon'
+    ini_mod = db.Column(db.Integer, default=0)  # Initiative-Modifikator
+    at_mod = db.Column(db.Integer, default=0)  # Attacke-Modifikator
+    pa_mod = db.Column(db.Integer, default=0)  # Parade-Modifikator
 
 
 # Formulare
@@ -140,7 +178,40 @@ class CombatProbeForm(FlaskForm):
     erschwernis = IntegerField('Erschwernis', default=0)
     submit = SubmitField('Probe durchführen')
 
+# Formularklassen für Waffen
 
+class MeleeWeaponForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    be = IntegerField('Behinderung (BE)', validators=[NumberRange(min=0)], default=0)
+    tp = StringField('Trefferpunkte (z.B. "1W6+4")', validators=[DataRequired()])
+    tp_kk_schwelle = IntegerField('KK-Schwelle für TP-Bonus', validators=[NumberRange(min=0)], default=0)
+    tp_kk_schritt = IntegerField('KK-Schrittweite für TP-Bonus', validators=[NumberRange(min=0)], default=0)
+    ini_mod = IntegerField('Initiative-Modifikator', default=0)
+    at_mod = IntegerField('Attacke-Modifikator', default=0)
+    pa_mod = IntegerField('Parade-Modifikator', default=0)
+    equipped = BooleanField('Ausgerüstet')
+    submit = SubmitField('Speichern')
+
+class RangedWeaponForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    be = IntegerField('Behinderung (BE)', validators=[NumberRange(min=0)], default=0)
+    tp = StringField('Trefferpunkte (z.B. "1W6+4")', validators=[DataRequired()])
+    reichweite = StringField('Entfernungsklassen (z.B. "5/10/15/25/40")', validators=[DataRequired()])
+    tp_mod_entfernung = StringField('TP-Modifikator nach Entfernung (z.B. "+2/+1/0/-1/-3")', validators=[DataRequired()])
+    ladezeit_einzeln = IntegerField('Ladezeit (einzeln)', validators=[NumberRange(min=0)], default=1)
+    ladezeit_magazin = IntegerField('Ladezeit (Magazin)', validators=[NumberRange(min=0)])
+    munition_aktuell = IntegerField('Aktuelle Munition', validators=[NumberRange(min=0)], default=0)
+    munition_max = IntegerField('Maximale Munition', validators=[NumberRange(min=0)], default=0)
+    equipped = BooleanField('Ausgerüstet')
+    submit = SubmitField('Speichern')
+
+class ParryWeaponForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    ini_mod = IntegerField('Initiative-Modifikator', default=0)
+    at_mod = IntegerField('Attacke-Modifikator', default=0)
+    pa_mod = IntegerField('Parade-Modifikator', default=0)
+    equipped = BooleanField('Ausgerüstet')
+    submit = SubmitField('Speichern')
 
 # Routen
 @app.route('/')
@@ -646,6 +717,260 @@ def combat_probe(character_id):
                          result=result,
                          details=details)
 
+
+# Waffen-Übersicht
+@app.route('/character/<int:character_id>/weapons')
+def character_weapons(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    melee_weapons = MeleeWeapon.query.filter_by(character_id=character_id).all()
+    ranged_weapons = RangedWeapon.query.filter_by(character_id=character_id).all()
+    parry_weapons = ParryWeapon.query.filter_by(character_id=character_id).all()
+    
+    return render_template('weapons.html', 
+                           character=character,
+                           melee_weapons=melee_weapons,
+                           ranged_weapons=ranged_weapons,
+                           parry_weapons=parry_weapons)
+
+# Nahkampfwaffen-Verwaltung
+@app.route('/character/<int:character_id>/weapon/melee/new', methods=['GET', 'POST'])
+def new_melee_weapon(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    form = MeleeWeaponForm()
+    if form.validate_on_submit():
+        weapon = MeleeWeapon(
+            name=form.name.data,
+            be=form.be.data,
+            tp=form.tp.data,
+            tp_kk_schwelle=form.tp_kk_schwelle.data,
+            tp_kk_schritt=form.tp_kk_schritt.data,
+            ini_mod=form.ini_mod.data,
+            at_mod=form.at_mod.data,
+            pa_mod=form.pa_mod.data,
+            equipped=form.equipped.data,
+            character_id=character.id
+        )
+        db.session.add(weapon)
+        db.session.commit()
+        flash(f'Nahkampfwaffe "{weapon.name}" wurde hinzugefügt!', 'success')
+        return redirect(url_for('character_weapons', character_id=character.id))
+    
+    return render_template('melee_weapon_form.html', form=form, character=character, title='Neue Nahkampfwaffe')
+
+@app.route('/weapon/melee/<int:weapon_id>/edit', methods=['GET', 'POST'])
+def edit_melee_weapon(weapon_id):
+    weapon = db.session.get(MeleeWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    form = MeleeWeaponForm(obj=weapon)
+    if form.validate_on_submit():
+        weapon.name = form.name.data
+        weapon.be = form.be.data
+        weapon.tp = form.tp.data
+        weapon.tp_kk_schwelle = form.tp_kk_schwelle.data
+        weapon.tp_kk_schritt = form.tp_kk_schritt.data
+        weapon.ini_mod = form.ini_mod.data
+        weapon.at_mod = form.at_mod.data
+        weapon.pa_mod = form.pa_mod.data
+        weapon.equipped = form.equipped.data
+        
+        db.session.commit()
+        flash(f'Nahkampfwaffe "{weapon.name}" wurde aktualisiert!', 'success')
+        return redirect(url_for('character_weapons', character_id=weapon.character_id))
+    
+    return render_template('melee_weapon_form.html', form=form, character=weapon.character, title='Nahkampfwaffe bearbeiten')
+
+@app.route('/weapon/melee/<int:weapon_id>/delete')
+def delete_melee_weapon(weapon_id):
+    weapon = db.session.get(MeleeWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    character_id = weapon.character_id
+    name = weapon.name
+    db.session.delete(weapon)
+    db.session.commit()
+    flash(f'Nahkampfwaffe "{name}" wurde gelöscht!', 'success')
+    return redirect(url_for('character_weapons', character_id=character_id))
+
+@app.route('/weapon/melee/<int:weapon_id>/toggle-equip')
+def toggle_equip_melee(weapon_id):
+    weapon = db.session.get(MeleeWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    weapon.equipped = not weapon.equipped
+    db.session.commit()
+    
+    if weapon.equipped:
+        flash(f'Nahkampfwaffe "{weapon.name}" wurde ausgerüstet!', 'success')
+    else:
+        flash(f'Nahkampfwaffe "{weapon.name}" wurde abgelegt!', 'success')
+    
+    return redirect(url_for('character_weapons', character_id=weapon.character_id))
+
+# Fernkampfwaffen-Verwaltung
+@app.route('/character/<int:character_id>/weapon/ranged/new', methods=['GET', 'POST'])
+def new_ranged_weapon(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    form = RangedWeaponForm()
+    if form.validate_on_submit():
+        weapon = RangedWeapon(
+            name=form.name.data,
+            be=form.be.data,
+            tp=form.tp.data,
+            reichweite=form.reichweite.data,
+            tp_mod_entfernung=form.tp_mod_entfernung.data,
+            ladezeit_einzeln=form.ladezeit_einzeln.data,
+            ladezeit_magazin=form.ladezeit_magazin.data if form.ladezeit_magazin.data else None,
+            munition_aktuell=form.munition_aktuell.data,
+            munition_max=form.munition_max.data,
+            equipped=form.equipped.data,
+            character_id=character.id
+        )
+        db.session.add(weapon)
+        db.session.commit()
+        flash(f'Fernkampfwaffe "{weapon.name}" wurde hinzugefügt!', 'success')
+        return redirect(url_for('character_weapons', character_id=character.id))
+    
+    return render_template('ranged_weapon_form.html', form=form, character=character, title='Neue Fernkampfwaffe')
+
+@app.route('/weapon/ranged/<int:weapon_id>/edit', methods=['GET', 'POST'])
+def edit_ranged_weapon(weapon_id):
+    weapon = db.session.get(RangedWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    form = RangedWeaponForm(obj=weapon)
+    if form.validate_on_submit():
+        weapon.name = form.name.data
+        weapon.be = form.be.data
+        weapon.tp = form.tp.data
+        weapon.reichweite = form.reichweite.data
+        weapon.tp_mod_entfernung = form.tp_mod_entfernung.data
+        weapon.ladezeit_einzeln = form.ladezeit_einzeln.data
+        weapon.ladezeit_magazin = form.ladezeit_magazin.data if form.ladezeit_magazin.data else None
+        weapon.munition_aktuell = form.munition_aktuell.data
+        weapon.munition_max = form.munition_max.data
+        weapon.equipped = form.equipped.data
+        
+        db.session.commit()
+        flash(f'Fernkampfwaffe "{weapon.name}" wurde aktualisiert!', 'success')
+        return redirect(url_for('character_weapons', character_id=weapon.character_id))
+    
+    return render_template('ranged_weapon_form.html', form=form, character=weapon.character, title='Fernkampfwaffe bearbeiten')
+
+@app.route('/weapon/ranged/<int:weapon_id>/delete')
+def delete_ranged_weapon(weapon_id):
+    weapon = db.session.get(RangedWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    character_id = weapon.character_id
+    name = weapon.name
+    db.session.delete(weapon)
+    db.session.commit()
+    flash(f'Fernkampfwaffe "{name}" wurde gelöscht!', 'success')
+    return redirect(url_for('character_weapons', character_id=character_id))
+
+@app.route('/weapon/ranged/<int:weapon_id>/toggle-equip')
+def toggle_equip_ranged(weapon_id):
+    weapon = db.session.get(RangedWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    weapon.equipped = not weapon.equipped
+    db.session.commit()
+    
+    if weapon.equipped:
+        flash(f'Fernkampfwaffe "{weapon.name}" wurde ausgerüstet!', 'success')
+    else:
+        flash(f'Fernkampfwaffe "{weapon.name}" wurde abgelegt!', 'success')
+    
+    return redirect(url_for('character_weapons', character_id=weapon.character_id))
+
+# Parierwaffen-Verwaltung
+@app.route('/character/<int:character_id>/weapon/parry/new', methods=['GET', 'POST'])
+def new_parry_weapon(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    form = ParryWeaponForm()
+    if form.validate_on_submit():
+        weapon = ParryWeapon(
+            name=form.name.data,
+            ini_mod=form.ini_mod.data,
+            at_mod=form.at_mod.data,
+            pa_mod=form.pa_mod.data,
+            equipped=form.equipped.data,
+            character_id=character.id
+        )
+        db.session.add(weapon)
+        db.session.commit()
+        flash(f'Parierwaffe "{weapon.name}" wurde hinzugefügt!', 'success')
+        return redirect(url_for('character_weapons', character_id=character.id))
+    
+    return render_template('parry_weapon_form.html', form=form, character=character, title='Neue Parierwaffe')
+
+@app.route('/weapon/parry/<int:weapon_id>/edit', methods=['GET', 'POST'])
+def edit_parry_weapon(weapon_id):
+    weapon = db.session.get(ParryWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    form = ParryWeaponForm(obj=weapon)
+    if form.validate_on_submit():
+        weapon.name = form.name.data
+        weapon.ini_mod = form.ini_mod.data
+        weapon.at_mod = form.at_mod.data
+        weapon.pa_mod = form.pa_mod.data
+        weapon.equipped = form.equipped.data
+        
+        db.session.commit()
+        flash(f'Parierwaffe "{weapon.name}" wurde aktualisiert!', 'success')
+        return redirect(url_for('character_weapons', character_id=weapon.character_id))
+    
+    return render_template('parry_weapon_form.html', form=form, character=weapon.character, title='Parierwaffe bearbeiten')
+
+@app.route('/weapon/parry/<int:weapon_id>/delete')
+def delete_parry_weapon(weapon_id):
+    weapon = db.session.get(ParryWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    character_id = weapon.character_id
+    name = weapon.name
+    db.session.delete(weapon)
+    db.session.commit()
+    flash(f'Parierwaffe "{name}" wurde gelöscht!', 'success')
+    return redirect(url_for('character_weapons', character_id=character_id))
+
+@app.route('/weapon/parry/<int:weapon_id>/toggle-equip')
+def toggle_equip_parry(weapon_id):
+    weapon = db.session.get(ParryWeapon, weapon_id)
+    if weapon is None:
+        abort(404)
+    
+    weapon.equipped = not weapon.equipped
+    db.session.commit()
+    
+    if weapon.equipped:
+        flash(f'Parierwaffe "{weapon.name}" wurde ausgerüstet!', 'success')
+    else:
+        flash(f'Parierwaffe "{weapon.name}" wurde abgelegt!', 'success')
+    
+    return redirect(url_for('character_weapons', character_id=weapon.character_id))
 
 @app.route('/init_db')
 def init_db():
