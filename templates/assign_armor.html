@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-user-plus me-2"></i>{{ armor.name }} zuweisen</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('all_armors') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-danger text-white">
+    <h5 class="mb-0">Rüstung einem Charakter zuweisen</h5>
+  </div>
+  <div class="card-body">
+    <!-- Rüstungs-Details -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <h5 class="mb-3">Rüstungs-Details</h5>
+        <table class="table">
+          <tbody>
+            <tr>
+              <th style="width: 40%">Name:</th>
+              <td>{{ armor.name }}</td>
+            </tr>
+            <tr>
+              <th>Rüstungsschutz (RS):</th>
+              <td>{{ armor.rs_wert }}</td>
+            </tr>
+            <tr>
+              <th>Behinderung (BE):</th>
+              <td>{{ armor.be }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="col-md-6">
+        <h5 class="mb-3">Zuweisung</h5>
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          
+          <div class="form-group mb-3">
+            {{ form.character_id.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-user"></i></span>
+              {{ form.character_id(class="form-select") }}
+            </div>
+            {% if form.character_id.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.character_id.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="form-check mb-3">
+            <input type="checkbox" name="equipped" class="form-check-input" id="equipped">
+            <label class="form-check-label" for="equipped">Direkt anlegen (Achtung: Überschreibt die aktuellen RS und BE Werte)</label>
+          </div>
+          
+          <div class="d-grid gap-2">
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Aktuell zugewiesen an -->
+    <h5 class="mb-3">Aktuell zugewiesen an:</h5>
+    {% if assigned_chars %}
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Charakter</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for char_link in assigned_chars %}
+            <tr>
+              <td>{{ char_link.character.name }}</td>
+              <td>{% if char_link.equipped %}<span class="badge bg-success">Angelegt</span>{% else %}<span class="badge bg-secondary">Im Inventar</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Diese Rüstung ist derzeit keinem Charakter zugewiesen.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

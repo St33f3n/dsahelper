@@ -26,8 +26,8 @@
                         <a href="{{ url_for('character_combat_skills', character_id=character.id) }}" class="btn btn-dark btn-sm">
                             <i class="fas fa-fist-raised me-1"></i> Kampffähigkeiten
                         </a>
-                        <a href="{{ url_for('character_weapons', character_id=character.id) }}" class="btn btn-warning btn-sm">
-                            <i class="fas fa-sword me-1"></i> Waffen
+                        <a href="{{ url_for('character_inventory', character_id=character.id) }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-boxes me-1"></i> Inventar
                         </a>
                         <a href="{{ url_for('combat_probe', character_id=character.id) }}" class="btn btn-dark btn-sm">
                             <i class="fas fa-crosshairs me-1"></i> Kampfprobe

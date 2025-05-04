@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-shield-alt me-2"></i>{{ title }}</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('all_armors') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">Rüstungsdaten</h5>
+    </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-12">
+          <div class="form-group">
+            {{ form.name.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-tag"></i></span>
+              {{ form.name(class="form-control") }}
+            </div>
+            {% if form.name.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.name.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.rs_wert.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
+              {{ form.rs_wert(class="form-control") }}
+            </div>
+            {% if form.rs_wert.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.rs_wert.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.be.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-weight-hanging"></i></span>
+              {{ form.be(class="form-control") }}
+            </div>
+            {% if form.be.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.be.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2">
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

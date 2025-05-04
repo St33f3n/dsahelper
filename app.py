@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, abo
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import select
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, SelectMultipleField,Form, BooleanField, SubmitField
+from wtforms import StringField, IntegerField, SelectField,TextAreaField, FloatField, SelectMultipleField,Form, BooleanField, SubmitField
 from wtforms.validators import DataRequired, NumberRange
 import random
 import os
@@ -42,7 +42,8 @@ class Character(db.Model):
     melee_weapon_links = db.relationship('CharacterMeleeWeapon', backref='character', lazy=True, cascade="all, delete-orphan")
     ranged_weapon_links = db.relationship('CharacterRangedWeapon', backref='character', lazy=True, cascade="all, delete-orphan")
     parry_weapon_links = db.relationship('CharacterParryWeapon', backref='character', lazy=True, cascade="all, delete-orphan")
-    
+    armor_links = db.relationship('CharacterArmor', backref='character', lazy=True, cascade="all, delete-orphan")
+
     def get_attribute(self, attr_key):
         attr_map = {
             'MU': self.mut,
@@ -138,6 +139,40 @@ class CharacterParryWeapon(db.Model):
     character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
     weapon_id = db.Column(db.Integer, db.ForeignKey('parry_weapon.id'), nullable=False)
     equipped = db.Column(db.Boolean, default=False)
+
+# Armor model
+class Armor(db.Model):
+    __tablename__ = 'armor'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    rs_wert = db.Column(db.Integer, default=0)  # Rüstungsschutz (armor value)
+    be = db.Column(db.Integer, default=0)  # Behinderung (encumbrance)
+    character_links = db.relationship('CharacterArmor', backref='armor', lazy=True, cascade="all, delete-orphan")
+
+# Verbindungstabelle Character-Armor
+class CharacterArmor(db.Model):
+    __tablename__ = 'character_armor'
+    id = db.Column(db.Integer, primary_key=True)
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
+    armor_id = db.Column(db.Integer, db.ForeignKey('armor.id'), nullable=False)
+    equipped = db.Column(db.Boolean, default=False)
+
+# Inventory model für allgemeine Gegenstände
+class Inventory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False, unique=True)
+    money = db.Column(db.Float, default=0.0)  # Geldmenge
+    character = db.relationship('Character', backref=db.backref('inventory', uselist=False, cascade="all, delete-orphan"))
+    general_items = db.relationship('InventoryItem', backref='inventory', lazy=True, cascade="all, delete-orphan")
+    
+# Allgemeiner Inventargegenstand
+class InventoryItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    inventory_id = db.Column(db.Integer, db.ForeignKey('inventory.id'), nullable=False)
+
+
 
 
 # Formulare
@@ -245,6 +280,35 @@ class CharacterWeaponForm(FlaskForm):
     munition_aktuell = IntegerField('Aktuelle Munition', validators=[NumberRange(min=0)], default=0)
     equipped = BooleanField('Ausgerüstet')
     submit = SubmitField('Speichern')
+
+# Rüstungsformular
+class ArmorForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    rs_wert = IntegerField('Rüstungsschutz (RS)', validators=[NumberRange(min=0)], default=0)
+    be = IntegerField('Behinderung (BE)', validators=[NumberRange(min=0)], default=0)
+    submit = SubmitField('Speichern')
+
+# Formular für die Zuweisung von Rüstungen zu Charakteren
+class AssignArmorForm(FlaskForm):
+    character_id = SelectField('Charakter', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Rüstung zuweisen')
+
+# Formular für die Bearbeitung der Rüstung eines Charakters
+class CharacterArmorForm(FlaskForm):
+    equipped = BooleanField('Ausgerüstet')
+    submit = SubmitField('Speichern')
+
+# Formular für Inventargegenstände
+class InventoryItemForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    description = TextAreaField('Beschreibung')
+    submit = SubmitField('Speichern')
+
+# Formular für Geldverwaltung
+class MoneyForm(FlaskForm):
+    amount = FloatField('Betrag', validators=[DataRequired(), NumberRange(min=0.01)])
+    submit = SubmitField('Speichern')
+
 # Routen
 @app.route('/')
 def index():
@@ -1301,6 +1365,419 @@ def remove_character_parry_weapon(link_id):
     
     flash(f'"{weapon.name}" wurde von {character.name} entfernt!', 'success')
     return redirect(url_for('character_weapons', character_id=character_id))
+
+# Alle Rüstungen anzeigen
+@app.route('/armors')
+def all_armors():
+    armors = Armor.query.all()
+    return render_template('all_armors.html', armors=armors)
+
+# Neue Rüstung erstellen
+@app.route('/armor/new', methods=['GET', 'POST'])
+def new_armor():
+    form = ArmorForm()
+    
+    if form.validate_on_submit():
+        armor = Armor(
+            name=form.name.data,
+            rs_wert=form.rs_wert.data,
+            be=form.be.data
+        )
+        db.session.add(armor)
+        db.session.commit()
+        flash(f'Rüstung "{armor.name}" wurde hinzugefügt!', 'success')
+        return redirect(url_for('all_armors'))
+    
+    return render_template('armor_form.html', form=form, title='Neue Rüstung')
+
+# Rüstung bearbeiten
+@app.route('/armor/<int:armor_id>/edit', methods=['GET', 'POST'])
+def edit_armor(armor_id):
+    armor = db.session.get(Armor, armor_id)
+    if armor is None:
+        abort(404)
+    
+    form = ArmorForm(obj=armor)
+    if form.validate_on_submit():
+        armor.name = form.name.data
+        armor.rs_wert = form.rs_wert.data
+        armor.be = form.be.data
+        
+        db.session.commit()
+        flash(f'Rüstung "{armor.name}" wurde aktualisiert!', 'success')
+        return redirect(url_for('all_armors'))
+    
+    return render_template('armor_form.html', form=form, title='Rüstung bearbeiten')
+
+# Rüstung löschen
+@app.route('/armor/<int:armor_id>/delete')
+def delete_armor(armor_id):
+    armor = db.session.get(Armor, armor_id)
+    if armor is None:
+        abort(404)
+    
+    name = armor.name
+    db.session.delete(armor)
+    db.session.commit()
+    flash(f'Rüstung "{name}" wurde gelöscht!', 'success')
+    return redirect(url_for('all_armors'))
+
+# Rüstung einem Charakter zuweisen
+@app.route('/armor/<int:armor_id>/assign', methods=['GET', 'POST'])
+def assign_armor(armor_id):
+    armor = db.session.get(Armor, armor_id)
+    if armor is None:
+        abort(404)
+    
+    assigned_chars = (db.session.query(CharacterArmor)
+                    .filter(CharacterArmor.armor_id == armor_id)
+                    .join(Character, CharacterArmor.character_id == Character.id)
+                    .all())
+    
+    form = AssignArmorForm()
+    # Alle Charaktere für das Dropdown holen
+    characters = Character.query.all()
+    form.character_id.choices = [(c.id, c.name) for c in characters]
+    
+    if form.validate_on_submit():
+        character_id = form.character_id.data
+        
+        # Prüfen, ob der Charakter die Rüstung bereits hat
+        existing = CharacterArmor.query.filter_by(
+            character_id=character_id, 
+            armor_id=armor_id
+        ).first()
+        
+        if existing:
+            flash(f'Der Charakter hat diese Rüstung bereits!', 'warning')
+            return redirect(url_for('assign_armor', armor_id=armor_id))
+        
+        # Neue Verknüpfung erstellen
+        equipped = request.form.get('equipped') == 'on'
+        char_armor = CharacterArmor(
+            character_id=character_id,
+            armor_id=armor_id,
+            equipped=equipped
+        )
+        
+        # Wenn ausgerüstet, andere Rüstungen ablegen
+        if equipped:
+            other_armors = CharacterArmor.query.filter(
+                CharacterArmor.character_id == character_id,
+                CharacterArmor.equipped == True
+            ).all()
+            for other in other_armors:
+                other.equipped = False
+            
+            # Character RS und BE aktualisieren
+            character = db.session.get(Character, character_id)
+            character.rs_wert = armor.rs_wert
+            character.be = armor.be
+        
+        db.session.add(char_armor)
+        db.session.commit()
+        
+        character = db.session.get(Character, character_id)
+        flash(f'Rüstung "{armor.name}" wurde {character.name} zugewiesen!', 'success')
+        
+        return redirect(url_for('character_inventory', character_id=character_id))
+    
+    return render_template('assign_armor.html', 
+                        form=form, 
+                        armor=armor,
+                        assigned_chars=assigned_chars)
+
+# Rüstung an-/ablegen
+@app.route('/character_armor/<int:link_id>/toggle-equip')
+def toggle_equip_armor(link_id):
+    char_armor = db.session.get(CharacterArmor, link_id)
+    if char_armor is None:
+        abort(404)
+    
+    # Wenn Rüstung angelegt werden soll, alle anderen Rüstungen ablegen
+    if not char_armor.equipped:
+        other_armors = CharacterArmor.query.filter(
+            CharacterArmor.character_id == char_armor.character_id,
+            CharacterArmor.id != char_armor.id,
+            CharacterArmor.equipped == True
+        ).all()
+        for other in other_armors:
+            other.equipped = False
+    
+    char_armor.equipped = not char_armor.equipped
+    
+    armor = db.session.get(Armor, char_armor.armor_id)
+    character = db.session.get(Character, char_armor.character_id)
+    
+    if char_armor.equipped:
+        # Character RS und BE aktualisieren
+        character.rs_wert = armor.rs_wert
+        character.be = armor.be
+        db.session.commit()
+        flash(f'"{armor.name}" wurde von {character.name} angelegt! RS und BE wurden aktualisiert.', 'success')
+    else:
+        # Character RS und BE zurücksetzen
+        character.rs_wert = 0
+        character.be = 0
+        db.session.commit()
+        flash(f'"{armor.name}" wurde von {character.name} abgelegt! RS und BE wurden zurückgesetzt.', 'success')
+    
+    return redirect(url_for('character_inventory', character_id=char_armor.character_id))
+
+# Character Inventar anzeigen
+@app.route('/character/<int:character_id>/inventory')
+def character_inventory(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    # Inventar abrufen oder erstellen falls nicht vorhanden
+    inventory = db.session.query(Inventory).filter_by(character_id=character_id).first()
+    if inventory is None:
+        inventory = Inventory(character_id=character_id)
+        db.session.add(inventory)
+        db.session.commit()
+    
+    # Waffen abrufen
+    melee_weapons = (db.session.query(CharacterMeleeWeapon)
+                    .filter(CharacterMeleeWeapon.character_id == character_id)
+                    .join(MeleeWeapon, CharacterMeleeWeapon.weapon_id == MeleeWeapon.id)
+                    .all())
+    
+    ranged_weapons = (db.session.query(CharacterRangedWeapon)
+                    .filter(CharacterRangedWeapon.character_id == character_id)
+                    .join(RangedWeapon, CharacterRangedWeapon.weapon_id == RangedWeapon.id)
+                    .all())
+    
+    parry_weapons = (db.session.query(CharacterParryWeapon)
+                    .filter(CharacterParryWeapon.character_id == character_id)
+                    .join(ParryWeapon, CharacterParryWeapon.weapon_id == ParryWeapon.id)
+                    .all())
+    
+    # Rüstungen abrufen
+    armors = (db.session.query(CharacterArmor)
+            .filter(CharacterArmor.character_id == character_id)
+            .join(Armor, CharacterArmor.armor_id == Armor.id)
+            .all())
+    
+    # Allgemeine Gegenstände abrufen
+    general_items = inventory.general_items
+    
+    return render_template('character_inventory.html', 
+                        character=character,
+                        inventory=inventory,
+                        melee_weapons=melee_weapons,
+                        ranged_weapons=ranged_weapons,
+                        parry_weapons=parry_weapons,
+                        armors=armors,
+                        general_items=general_items)
+
+# Gegenstand zum Inventar hinzufügen
+@app.route('/character/<int:character_id>/inventory/add_item', methods=['GET', 'POST'])
+def add_inventory_item(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    # Inventar abrufen oder erstellen
+    inventory = db.session.query(Inventory).filter_by(character_id=character_id).first()
+    if inventory is None:
+        inventory = Inventory(character_id=character_id)
+        db.session.add(inventory)
+        db.session.commit()
+    
+    form = InventoryItemForm()
+    
+    if form.validate_on_submit():
+        item = InventoryItem(
+            name=form.name.data,
+            description=form.description.data,
+            inventory_id=inventory.id
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash(f'Gegenstand "{item.name}" wurde zum Inventar hinzugefügt!', 'success')
+        return redirect(url_for('character_inventory', character_id=character_id))
+    
+    return render_template('inventory_item_form.html',
+                        form=form,
+                        character=character,
+                        title='Gegenstand hinzufügen')
+
+# Inventargegenstand bearbeiten
+@app.route('/inventory_item/<int:item_id>/edit', methods=['GET', 'POST'])
+def edit_inventory_item(item_id):
+    item = db.session.get(InventoryItem, item_id)
+    if item is None:
+        abort(404)
+    
+    inventory = db.session.get(Inventory, item.inventory_id)
+    character = db.session.get(Character, inventory.character_id)
+    
+    form = InventoryItemForm(obj=item)
+    
+    if form.validate_on_submit():
+        item.name = form.name.data
+        item.description = form.description.data
+        
+        db.session.commit()
+        flash(f'Gegenstand "{item.name}" wurde aktualisiert!', 'success')
+        return redirect(url_for('character_inventory', character_id=character.id))
+    
+    return render_template('inventory_item_form.html',
+                        form=form,
+                        character=character,
+                        title='Gegenstand bearbeiten')
+
+# Inventargegenstand löschen
+@app.route('/inventory_item/<int:item_id>/delete')
+def delete_inventory_item(item_id):
+    item = db.session.get(InventoryItem, item_id)
+    if item is None:
+        abort(404)
+    
+    inventory = db.session.get(Inventory, item.inventory_id)
+    character_id = inventory.character_id
+    
+    name = item.name
+    db.session.delete(item)
+    db.session.commit()
+    
+    flash(f'Gegenstand "{name}" wurde aus dem Inventar entfernt!', 'success')
+    return redirect(url_for('character_inventory', character_id=character_id))
+
+# Geld zum Inventar hinzufügen
+@app.route('/character/<int:character_id>/inventory/add_money', methods=['GET', 'POST'])
+def add_money(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    # Inventar abrufen oder erstellen
+    inventory = db.session.query(Inventory).filter_by(character_id=character_id).first()
+    if inventory is None:
+        inventory = Inventory(character_id=character_id)
+        db.session.add(inventory)
+        db.session.commit()
+    
+    form = MoneyForm()
+    
+    if form.validate_on_submit():
+        amount = form.amount.data
+        inventory.money += amount
+        db.session.commit()
+        flash(f'{amount} Münzen wurden zum Inventar hinzugefügt!', 'success')
+        return redirect(url_for('character_inventory', character_id=character_id))
+    
+    return render_template('money_form.html',
+                        form=form,
+                        character=character,
+                        inventory=inventory,
+                        title='Geld hinzufügen',
+                        action_type='add')
+
+# Geld vom Inventar abziehen
+@app.route('/character/<int:character_id>/inventory/remove_money', methods=['GET', 'POST'])
+def remove_money(character_id):
+    character = db.session.get(Character, character_id)
+    if character is None:
+        abort(404)
+    
+    # Inventar abrufen oder erstellen
+    inventory = db.session.query(Inventory).filter_by(character_id=character_id).first()
+    if inventory is None:
+        inventory = Inventory(character_id=character_id)
+        db.session.add(inventory)
+        db.session.commit()
+    
+    form = MoneyForm()
+    
+    if form.validate_on_submit():
+        amount = form.amount.data
+        if amount > inventory.money:
+            flash(f'Nicht genug Geld vorhanden! (Verfügbar: {inventory.money})', 'danger')
+        else:
+            inventory.money -= amount
+            db.session.commit()
+            flash(f'{amount} Münzen wurden vom Inventar abgezogen!', 'success')
+            return redirect(url_for('character_inventory', character_id=character_id))
+    
+    return render_template('money_form.html',
+                        form=form,
+                        character=character,
+                        inventory=inventory,
+                        title='Geld abziehen',
+                        action_type='remove')
+
+@app.route('/character_armor/<int:link_id>/edit', methods=['GET', 'POST'])
+def edit_character_armor(link_id):
+    char_armor = db.session.get(CharacterArmor, link_id)
+    if char_armor is None:
+        abort(404)
+    
+    armor = db.session.get(Armor, char_armor.armor_id)
+    character = db.session.get(Character, char_armor.character_id)
+    
+    form = CharacterArmorForm(obj=char_armor)
+    
+    if form.validate_on_submit():
+        was_equipped = char_armor.equipped
+        char_armor.equipped = form.equipped.data
+        
+        # Wenn ausgerüstet wird, andere Rüstungen ablegen
+        if not was_equipped and char_armor.equipped:
+            other_armors = CharacterArmor.query.filter(
+                CharacterArmor.character_id == char_armor.character_id,
+                CharacterArmor.id != char_armor.id,
+                CharacterArmor.equipped == True
+            ).all()
+            for other in other_armors:
+                other.equipped = False
+        
+        # Character RS und BE aktualisieren
+        if not was_equipped and char_armor.equipped:
+            # Rüstung wurde neu angelegt
+            character.rs_wert = armor.rs_wert
+            character.be = armor.be
+            flash(f'"{armor.name}" wurde angelegt und RS/BE aktualisiert.', 'success')
+        elif was_equipped and not char_armor.equipped:
+            # Rüstung wurde abgelegt
+            character.rs_wert = 0
+            character.be = 0
+            flash(f'"{armor.name}" wurde abgelegt und RS/BE zurückgesetzt.', 'success')
+        else:
+            flash(f'Einstellungen für "{armor.name}" wurden aktualisiert!', 'success')
+        
+        db.session.commit()
+        return redirect(url_for('character_inventory', character_id=character.id))
+    
+    return render_template('character_armor_form.html',
+                          form=form,
+                          armor=armor, 
+                          character=character,
+                          title='Rüstung bearbeiten')
+
+@app.route('/character_armor/<int:link_id>/remove')
+def remove_character_armor(link_id):
+    char_armor = db.session.get(CharacterArmor, link_id)
+    if char_armor is None:
+        abort(404)
+    
+    character_id = char_armor.character_id
+    armor = db.session.get(Armor, char_armor.armor_id)
+    character = db.session.get(Character, character_id)
+    
+    # Wenn die Rüstung angelegt war, RS und BE zurücksetzen
+    if char_armor.equipped:
+        character.rs_wert = 0
+        character.be = 0
+    
+    db.session.delete(char_armor)
+    db.session.commit()
+    
+    flash(f'"{armor.name}" wurde von {character.name} entfernt!', 'success')
+    return redirect(url_for('character_inventory', character_id=character_id))
+
 
 @app.route('/init_db')
 def init_db():

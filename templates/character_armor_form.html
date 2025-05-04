@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-edit me-2"></i>{{ title }}</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('character_inventory', character_id=character.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-danger text-white">
+    <h5 class="mb-0">{{ armor.name }} - Einstellungen für {{ character.name }}</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      
+      <div class="form-check mb-3">
+        {{ form.equipped(class="form-check-input") }}
+        {{ form.equipped.label(class="form-check-label") }}
+        <div class="form-text text-danger">
+          Achtung: Bei Anlegen werden die RS- und BE-Werte des Charakters aktualisiert!
+        </div>
+      </div>
+      
+      <div class="d-grid gap-2">
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Rüstungs-Details zur Information -->
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    <h5 class="mb-0">Rüstungs-Details</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <tbody>
+          <tr>
+            <th style="width: 30%">Name:</th>
+            <td>{{ armor.name }}</td>
+          </tr>
+          <tr>
+            <th>Rüstungsschutz (RS):</th>
+            <td>{{ armor.rs_wert }}</td>
+          </tr>
+          <tr>
+            <th>Behinderung (BE):</th>
+            <td>{{ armor.be }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
