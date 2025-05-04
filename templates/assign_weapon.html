@@ -1,0 +1,175 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-user-plus me-2"></i>{{ weapon.name }} zuweisen</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('all_weapons') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">Waffe einem Charakter zuweisen</h5>
+  </div>
+  <div class="card-body">
+    <!-- Waffen-Details -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <h5 class="mb-3">Waffen-Details</h5>
+        <table class="table">
+          <tbody>
+            <tr>
+              <th style="width: 30%">Name:</th>
+              <td>{{ weapon.name }}</td>
+            </tr>
+            
+            {% if weapon_type == 'melee' %}
+            <tr>
+              <th>Trefferpunkte:</th>
+              <td>{{ weapon.tp }}</td>
+            </tr>
+            <tr>
+              <th>Behinderung:</th>
+              <td>{{ weapon.be }}</td>
+            </tr>
+            <tr>
+              <th>Initiative:</th>
+              <td>{{ weapon.ini_mod }}</td>
+            </tr>
+            <tr>
+              <th>Attacke/Parade:</th>
+              <td>{{ weapon.at_mod }}/{{ weapon.pa_mod }}</td>
+            </tr>
+            {% if weapon.tp_kk_schwelle > 0 %}
+            <tr>
+              <th>KK-Bonus:</th>
+              <td>ab KK {{ weapon.tp_kk_schwelle }} (+1/{{ weapon.tp_kk_schritt }})</td>
+            </tr>
+            {% endif %}
+            
+            {% elif weapon_type == 'ranged' %}
+            <tr>
+              <th>Trefferpunkte:</th>
+              <td>{{ weapon.tp }}</td>
+            </tr>
+            <tr>
+              <th>Behinderung:</th>
+              <td>{{ weapon.be }}</td>
+            </tr>
+            <tr>
+              <th>Reichweite:</th>
+              <td>{{ weapon.reichweite }}</td>
+            </tr>
+            <tr>
+              <th>TP-Mod Entfernung:</th>
+              <td>{{ weapon.tp_mod_entfernung }}</td>
+            </tr>
+            <tr>
+              <th>Ladezeit:</th>
+              <td>{{ weapon.ladezeit_einzeln }}{% if weapon.ladezeit_magazin is not none %} (Magazin: {{ weapon.ladezeit_magazin }}){% endif %}</td>
+            </tr>
+            <tr>
+              <th>Magazingröße:</th>
+              <td>{{ weapon.munition_max }}</td>
+            </tr>
+            
+            {% elif weapon_type == 'parry' %}
+            <tr>
+              <th>Initiative:</th>
+              <td>{{ weapon.ini_mod }}</td>
+            </tr>
+            <tr>
+              <th>Attacke:</th>
+              <td>{{ weapon.at_mod }}</td>
+            </tr>
+            <tr>
+              <th>Parade:</th>
+              <td>{{ weapon.pa_mod }}</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="col-md-6">
+        <h5 class="mb-3">Zuweisung</h5>
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          
+          <div class="form-group mb-3">
+            {{ form.character_id.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-user"></i></span>
+              {{ form.character_id(class="form-select") }}
+            </div>
+            {% if form.character_id.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.character_id.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          
+          {% if weapon_type == 'ranged' %}
+          <div class="form-group mb-3">
+            <label class="form-label">Munition</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-ammo"></i></span>
+              <input type="number" name="munition_aktuell" class="form-control" value="{{ weapon.munition_max }}" min="0" max="{{ weapon.munition_max }}">
+              <span class="input-group-text">/ {{ weapon.munition_max }}</span>
+            </div>
+          </div>
+          {% endif %}
+          
+          <div class="form-check mb-3">
+            <input type="checkbox" name="equipped" class="form-check-input" id="equipped">
+            <label class="form-check-label" for="equipped">Direkt ausrüsten</label>
+          </div>
+          
+          <div class="d-grid gap-2">
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Aktuell zugewiesen an -->
+    <h5 class="mb-3">Aktuell zugewiesen an:</h5>
+    {% if assigned_chars %}
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Charakter</th>
+              {% if weapon_type == 'ranged' %}
+              <th>Munition</th>
+              {% endif %}
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for char_link in assigned_chars %}
+            <tr>
+              <td>{{ char_link.character.name }}</td>
+              {% if weapon_type == 'ranged' %}
+              <td>{{ char_link.munition_aktuell }}/{{ weapon.munition_max }}</td>
+              {% endif %}
+              <td>{% if char_link.equipped %}<span class="badge bg-success">Ausgerüstet</span>{% else %}<span class="badge bg-secondary">Im Inventar</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Diese Waffe ist derzeit keinem Charakter zugewiesen.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

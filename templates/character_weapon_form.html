@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-edit me-2"></i>{{ title }}</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('character_weapons', character_id=character.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">{{ weapon.name }} - Einstellungen für {{ character.name }}</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      
+      {% if is_ranged %}
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.munition_aktuell.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-ammo"></i></span>
+              {{ form.munition_aktuell(class="form-control") }}
+              <span class="input-group-text">/ {{ weapon.munition_max }}</span>
+            </div>
+            {% if form.munition_aktuell.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.munition_aktuell.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      
+      <div class="form-check mb-3">
+        {{ form.equipped(class="form-check-input") }}
+        {{ form.equipped.label(class="form-check-label") }}
+      </div>
+      
+      <div class="d-grid gap-2">
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Waffen-Details zur Information -->
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    <h5 class="mb-0">Waffen-Details</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <tbody>
+          <tr>
+            <th style="width: 30%">Name:</th>
+            <td>{{ weapon.name }}</td>
+          </tr>
+          
+          {% if is_melee %}
+          <tr>
+            <th>Trefferpunkte:</th>
+            <td>{{ weapon.tp }}</td>
+          </tr>
+          <tr>
+            <th>Behinderung:</th>
+            <td>{{ weapon.be }}</td>
+          </tr>
+          <tr>
+            <th>Initiative:</th>
+            <td>{{ weapon.ini_mod }}</td>
+          </tr>
+          <tr>
+            <th>Attacke/Parade:</th>
+            <td>{{ weapon.at_mod }}/{{ weapon.pa_mod }}</td>
+          </tr>
+          {% if weapon.tp_kk_schwelle > 0 %}
+          <tr>
+            <th>KK-Bonus:</th>
+            <td>ab KK {{ weapon.tp_kk_schwelle }} (+1/{{ weapon.tp_kk_schritt }})</td>
+          </tr>
+          {% endif %}
+          
+          {% elif is_ranged %}
+          <tr>
+            <th>Trefferpunkte:</th>
+            <td>{{ weapon.tp }}</td>
+          </tr>
+          <tr>
+            <th>Behinderung:</th>
+            <td>{{ weapon.be }}</td>
+          </tr>
+          <tr>
+            <th>Reichweite:</th>
+            <td>{{ weapon.reichweite }}</td>
+          </tr>
+          <tr>
+            <th>TP-Mod Entfernung:</th>
+            <td>{{ weapon.tp_mod_entfernung }}</td>
+          </tr>
+          <tr>
+            <th>Ladezeit:</th>
+            <td>{{ weapon.ladezeit_einzeln }}{% if weapon.ladezeit_magazin is not none %} (Magazin: {{ weapon.ladezeit_magazin }}){% endif %}</td>
+          </tr>
+          <tr>
+            <th>Magazingröße:</th>
+            <td>{{ weapon.munition_max }}</td>
+          </tr>
+          
+          {% elif is_parry %}
+          <tr>
+            <th>Initiative:</th>
+            <td>{{ weapon.ini_mod }}</td>
+          </tr>
+          <tr>
+            <th>Attacke:</th>
+            <td>{{ weapon.at_mod }}</td>
+          </tr>
+          <tr>
+            <th>Parade:</th>
+            <td>{{ weapon.pa_mod }}</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

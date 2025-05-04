@@ -5,7 +5,7 @@
     <h2><i class="fas fa-bow-arrow me-2"></i>{{ title }}</h2>
   </div>
   <div class="col text-end">
-    <a href="{{ url_for('character_weapons', character_id=character.id) }}" class="btn btn-secondary">
+    <a href="{{ url_for('all_weapons') }}" class="btn btn-secondary">
       <i class="fas fa-arrow-left me-1"></i> Zurück
     </a>
   </div>
@@ -138,26 +138,7 @@
             {% endif %}
           </div>
         </div>
-      </div>
-
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <div class="form-group">
-            {{ form.munition_aktuell.label(class="form-label") }}
-            <div class="input-group">
-              <span class="input-group-text"><i class="fas fa-tachometer-alt"></i></span>
-              {{ form.munition_aktuell(class="form-control") }}
-            </div>
-            {% if form.munition_aktuell.errors %}
-              <div class="text-danger mt-1">
-                {% for error in form.munition_aktuell.errors %}
-                  <small>{{ error }}</small>
-                {% endfor %}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
           <div class="form-group">
             {{ form.munition_max.label(class="form-label") }}
             <div class="input-group">
@@ -173,11 +154,6 @@
             {% endif %}
           </div>
         </div>
-      </div>
-
-      <div class="form-check mb-3">
-        {{ form.equipped(class="form-check-input") }}
-        {{ form.equipped.label(class="form-check-label") }}
       </div>
 
       <div class="d-grid gap-2">

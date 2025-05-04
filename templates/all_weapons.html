@@ -1,0 +1,199 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-swords me-2"></i>Waffendatenbank</h2>
+  </div>
+  <div class="col text-end">
+    <div class="btn-group">
+      <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-plus-circle me-1"></i> Neue Waffe
+      </button>
+      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <li><a class="dropdown-item" href="{{ url_for('new_melee_weapon') }}">Nahkampfwaffe</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('new_ranged_weapon') }}">Fernkampfwaffe</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('new_parry_weapon') }}">Parierwaffe</a></li>
+      </ul>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<!-- Nahkampfwaffen -->
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0"><i class="fas fa-sword me-2"></i>Nahkampfwaffen</h5>
+  </div>
+  <div class="card-body">
+    {% if melee_weapons %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>TP</th>
+              <th>BE</th>
+              <th>KK-Bonus</th>
+              <th>INI/AT/PA</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for weapon in melee_weapons %}
+            <tr>
+              <td>{{ weapon.name }}</td>
+              <td>{{ weapon.tp }}</td>
+              <td>{{ weapon.be }}</td>
+              <td>
+                {% if weapon.tp_kk_schwelle > 0 %}
+                ab {{ weapon.tp_kk_schwelle }} (+1/{{ weapon.tp_kk_schritt }})
+                {% else %}
+                -
+                {% endif %}
+              </td>
+              <td>{{ weapon.ini_mod }}/{{ weapon.at_mod }}/{{ weapon.pa_mod }}</td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <a href="{{ url_for('assign_melee_weapon', weapon_id=weapon.id) }}" class="btn btn-success">
+                    <i class="fas fa-user-plus me-1"></i> Zuweisen
+                  </a>
+                  <a href="{{ url_for('edit_melee_weapon', weapon_id=weapon.id) }}" class="btn btn-warning text-white">
+                    <i class="fas fa-edit me-1"></i> Bearbeiten
+                  </a>
+                  <a href="{{ url_for('delete_melee_weapon', weapon_id=weapon.id) }}" class="btn btn-danger" 
+                     onclick="return confirm('Waffe wirklich löschen? Dies entfernt die Waffe auch von allen Charakteren!')">
+                    <i class="fas fa-trash-alt me-1"></i> Löschen
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Noch keine Nahkampfwaffen vorhanden.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Fernkampfwaffen -->
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    <h5 class="mb-0"><i class="fas fa-bow-arrow me-2"></i>Fernkampfwaffen</h5>
+  </div>
+  <div class="card-body">
+    {% if ranged_weapons %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>TP</th>
+              <th>BE</th>
+              <th>Reichweite</th>
+              <th>TP-Mod</th>
+              <th>Ladezeit</th>
+              <th>Magazin</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for weapon in ranged_weapons %}
+            <tr>
+              <td>{{ weapon.name }}</td>
+              <td>{{ weapon.tp }}</td>
+              <td>{{ weapon.be }}</td>
+              <td>{{ weapon.reichweite }}</td>
+              <td>{{ weapon.tp_mod_entfernung }}</td>
+              <td>{{ weapon.ladezeit_einzeln }}</td>
+              <td>
+                {% if weapon.ladezeit_magazin is not none %}
+                {{ weapon.munition_max }} ({{ weapon.ladezeit_magazin }})
+                {% else %}
+                Einzelschuss
+                {% endif %}
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <a href="{{ url_for('assign_ranged_weapon', weapon_id=weapon.id) }}" class="btn btn-success">
+                    <i class="fas fa-user-plus me-1"></i> Zuweisen
+                  </a>
+                  <a href="{{ url_for('edit_ranged_weapon', weapon_id=weapon.id) }}" class="btn btn-warning text-white">
+                    <i class="fas fa-edit me-1"></i> Bearbeiten
+                  </a>
+                  <a href="{{ url_for('delete_ranged_weapon', weapon_id=weapon.id) }}" class="btn btn-danger" 
+                     onclick="return confirm('Waffe wirklich löschen? Dies entfernt die Waffe auch von allen Charakteren!')">
+                    <i class="fas fa-trash-alt me-1"></i> Löschen
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Noch keine Fernkampfwaffen vorhanden.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Parierwaffen -->
+<div class="card mb-4">
+  <div class="card-header bg-secondary text-white">
+    <h5 class="mb-0"><i class="fas fa-shield me-2"></i>Parierwaffen</h5>
+  </div>
+  <div class="card-body">
+    {% if parry_weapons %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>INI-Mod</th>
+              <th>AT-Mod</th>
+              <th>PA-Mod</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for weapon in parry_weapons %}
+            <tr>
+              <td>{{ weapon.name }}</td>
+              <td>{{ weapon.ini_mod }}</td>
+              <td>{{ weapon.at_mod }}</td>
+              <td>{{ weapon.pa_mod }}</td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <a href="{{ url_for('assign_parry_weapon', weapon_id=weapon.id) }}" class="btn btn-success">
+                    <i class="fas fa-user-plus me-1"></i> Zuweisen
+                  </a>
+                  <a href="{{ url_for('edit_parry_weapon', weapon_id=weapon.id) }}" class="btn btn-warning text-white">
+                    <i class="fas fa-edit me-1"></i> Bearbeiten
+                  </a>
+                  <a href="{{ url_for('delete_parry_weapon', weapon_id=weapon.id) }}" class="btn btn-danger" 
+                     onclick="return confirm('Waffe wirklich löschen? Dies entfernt die Waffe auch von allen Charakteren!')">
+                    <i class="fas fa-trash-alt me-1"></i> Löschen
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Noch keine Parierwaffen vorhanden.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

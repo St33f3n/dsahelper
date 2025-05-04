@@ -5,7 +5,7 @@
     <h2><i class="fas fa-shield me-2"></i>{{ title }}</h2>
   </div>
   <div class="col text-end">
-    <a href="{{ url_for('character_weapons', character_id=character.id) }}" class="btn btn-secondary">
+    <a href="{{ url_for('all_weapons') }}" class="btn btn-secondary">
       <i class="fas fa-arrow-left me-1"></i> Zurück
     </a>
   </div>
@@ -86,11 +86,6 @@
             {% endif %}
           </div>
         </div>
-      </div>
-
-      <div class="form-check mb-3">
-        {{ form.equipped(class="form-check-input") }}
-        {{ form.equipped.label(class="form-check-label") }}
       </div>
 
       <div class="d-grid gap-2">

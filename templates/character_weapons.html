@@ -1,0 +1,216 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="fas fa-sword me-2"></i>Waffen für {{ character.name }}</h2>
+  </div>
+  <div class="col text-end">
+    <a href="{{ url_for('all_weapons') }}" class="btn btn-primary">
+      <i class="fas fa-database me-1"></i> Waffendatenbank
+    </a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Zurück
+    </a>
+  </div>
+</div>
+
+<!-- Nahkampfwaffen -->
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0"><i class="fas fa-sword me-2"></i>Nahkampfwaffen</h5>
+  </div>
+  <div class="card-body">
+    {% if melee_weapons %}
+      <div class="row">
+        {% for char_weapon in melee_weapons %}
+          <div class="col-md-6 mb-4">
+            <div class="card h-100 {% if char_weapon.equipped %}border-success{% endif %}">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ char_weapon.weapon.name }}</h5>
+                {% if char_weapon.equipped %}
+                  <span class="badge bg-success">Ausgerüstet</span>
+                {% endif %}
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <h6 class="text-muted mb-2">Eigenschaften</h6>
+                  <div class="d-flex flex-wrap mb-2">
+                    <span class="weapon-tag">TP: {{ char_weapon.weapon.tp }}</span>
+                    <span class="weapon-tag">BE: {{ char_weapon.weapon.be }}</span>
+                    <span class="weapon-tag">INI: {{ char_weapon.weapon.ini_mod }}</span>
+                    <span class="weapon-tag">AT: {{ char_weapon.weapon.at_mod }}</span>
+                    <span class="weapon-tag">PA: {{ char_weapon.weapon.pa_mod }}</span>
+                  </div>
+                  {% if char_weapon.weapon.tp_kk_schwelle > 0 %}
+                    <div class="mb-2">
+                      <small class="text-muted">TP-Bonus ab KK {{ char_weapon.weapon.tp_kk_schwelle }} (+1 alle {{ char_weapon.weapon.tp_kk_schritt }} Punkte)</small>
+                    </div>
+                  {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                  <a href="{{ url_for('toggle_equip_melee', link_id=char_weapon.id) }}" class="btn {% if char_weapon.equipped %}btn-outline-success{% else %}btn-success{% endif %} btn-sm me-2">
+                    <i class="fas {% if char_weapon.equipped %}fa-times{% else %}fa-check{% endif %} me-1"></i> 
+                    {% if char_weapon.equipped %}Ablegen{% else %}Ausrüsten{% endif %}
+                  </a>
+                  <a href="{{ url_for('edit_character_melee_weapon', link_id=char_weapon.id) }}" class="btn btn-warning btn-sm text-white me-2">
+                    <i class="fas fa-edit me-1"></i> Bearbeiten
+                  </a>
+                  <a href="{{ url_for('remove_character_melee_weapon', link_id=char_weapon.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Waffe wirklich von diesem Charakter entfernen?')">
+                    <i class="fas fa-trash-alt me-1"></i> Entfernen
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Noch keine Nahkampfwaffen diesem Charakter zugewiesen.
+        <a href="{{ url_for('all_weapons') }}" class="alert-link">Weisen Sie jetzt eine Waffe zu!</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Fernkampfwaffen -->
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    <h5 class="mb-0"><i class="fas fa-bow-arrow me-2"></i>Fernkampfwaffen</h5>
+  </div>
+  <div class="card-body">
+    {% if ranged_weapons %}
+      <div class="row">
+        {% for char_weapon in ranged_weapons %}
+          <div class="col-md-6 mb-4">
+            <div class="card h-100 {% if char_weapon.equipped %}border-success{% endif %}">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ char_weapon.weapon.name }}</h5>
+                {% if char_weapon.equipped %}
+                  <span class="badge bg-success">Ausgerüstet</span>
+                {% endif %}
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <h6 class="text-muted mb-2">Eigenschaften</h6>
+                  <div class="d-flex flex-wrap mb-2">
+                    <span class="weapon-tag">TP: {{ char_weapon.weapon.tp }}</span>
+                    <span class="weapon-tag">BE: {{ char_weapon.weapon.be }}</span>
+                  </div>
+                  <div class="mb-2">
+                    <small class="text-muted">Reichweite: {{ char_weapon.weapon.reichweite }}</small>
+                  </div>
+                  <div class="mb-2">
+                    <small class="text-muted">TP-Mod nach Entfernung: {{ char_weapon.weapon.tp_mod_entfernung }}</small>
+                  </div>
+                  <div class="mb-2">
+                    <small class="text-muted">Ladezeit: {{ char_weapon.weapon.ladezeit_einzeln }} Aktionen
+                    {% if char_weapon.weapon.ladezeit_magazin is not none %} 
+                      (Magazinwechsel: {{ char_weapon.weapon.ladezeit_magazin }})
+                    {% endif %}
+                    </small>
+                  </div>
+                  <div class="mb-2">
+                    <div class="progress">
+                      {% set percent = (char_weapon.munition_aktuell / char_weapon.weapon.munition_max * 100) if char_weapon.weapon.munition_max > 0 else 0 %}
+                      <div class="progress-bar bg-info" role="progressbar" style="width: {{ percent }}%" 
+                           aria-valuenow="{{ char_weapon.munition_aktuell }}" aria-valuemin="0" aria-valuemax="{{ char_weapon.weapon.munition_max }}">
+                        {{ char_weapon.munition_aktuell }}/{{ char_weapon.weapon.munition_max }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                  <a href="{{ url_for('toggle_equip_ranged', link_id=char_weapon.id) }}" class="btn {% if char_weapon.equipped %}btn-outline-success{% else %}btn-success{% endif %} btn-sm me-2">
+                    <i class="fas {% if char_weapon.equipped %}fa-times{% else %}fa-check{% endif %} me-1"></i> 
+                    {% if char_weapon.equipped %}Ablegen{% else %}Ausrüsten{% endif %}
+                  </a>
+                  <a href="{{ url_for('edit_character_ranged_weapon', link_id=char_weapon.id) }}" class="btn btn-warning btn-sm text-white me-2">
+                    <i class="fas fa-edit me-1"></i> Bearbeiten
+                  </a>
+                  <a href="{{ url_for('remove_character_ranged_weapon', link_id=char_weapon.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Waffe wirklich von diesem Charakter entfernen?')">
+                    <i class="fas fa-trash-alt me-1"></i> Entfernen
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Noch keine Fernkampfwaffen diesem Charakter zugewiesen.
+        <a href="{{ url_for('all_weapons') }}" class="alert-link">Weisen Sie jetzt eine Waffe zu!</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Parierwaffen -->
+<div class="card mb-4">
+  <div class="card-header bg-secondary text-white">
+    <h5 class="mb-0"><i class="fas fa-shield me-2"></i>Parierwaffen</h5>
+  </div>
+  <div class="card-body">
+    {% if parry_weapons %}
+      <div class="row">
+        {% for char_weapon in parry_weapons %}
+          <div class="col-md-6 mb-4">
+            <div class="card h-100 {% if char_weapon.equipped %}border-success{% endif %}">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ char_weapon.weapon.name }}</h5>
+                {% if char_weapon.equipped %}
+                  <span class="badge bg-success">Ausgerüstet</span>
+                {% endif %}
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <h6 class="text-muted mb-2">Eigenschaften</h6>
+                  <div class="d-flex flex-wrap mb-2">
+                    <span class="weapon-tag">INI: {{ char_weapon.weapon.ini_mod }}</span>
+                    <span class="weapon-tag">AT: {{ char_weapon.weapon.at_mod }}</span>
+                    <span class="weapon-tag">PA: {{ char_weapon.weapon.pa_mod }}</span>
+                  </div>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                  <a href="{{ url_for('toggle_equip_parry', link_id=char_weapon.id) }}" class="btn {% if char_weapon.equipped %}btn-outline-success{% else %}btn-success{% endif %} btn-sm me-2">
+                    <i class="fas {% if char_weapon.equipped %}fa-times{% else %}fa-check{% endif %} me-1"></i> 
+                    {% if char_weapon.equipped %}Ablegen{% else %}Ausrüsten{% endif %}
+                  </a>
+                  <a href="{{ url_for('edit_character_parry_weapon', link_id=char_weapon.id) }}" class="btn btn-warning btn-sm text-white me-2">
+                    <i class="fas fa-edit me-1"></i> Bearbeiten
+                  </a>
+                  <a href="{{ url_for('remove_character_parry_weapon', link_id=char_weapon.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Waffe wirklich von diesem Charakter entfernen?')">
+                    <i class="fas fa-trash-alt me-1"></i> Entfernen
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Noch keine Parierwaffen diesem Charakter zugewiesen.
+        <a href="{{ url_for('all_weapons') }}" class="alert-link">Weisen Sie jetzt eine Waffe zu!</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .weapon-tag {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    background-color: rgba(124, 90, 63, 0.1);
+    color: var(--secondary-color);
+    border-radius: 50rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+</style>
+{% endblock %}
