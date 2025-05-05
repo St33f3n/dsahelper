@@ -224,7 +224,17 @@ class ProbeForm(FlaskForm):
     w1 = IntegerField('Würfel 1 (1-20)', validators=[NumberRange(min=1, max=20)])
     w2 = IntegerField('Würfel 2 (1-20)', validators=[NumberRange(min=1, max=20)])
     w3 = IntegerField('Würfel 3 (1-20)', validators=[NumberRange(min=1, max=20)])
+    erschwernis = IntegerField('Erschwernis', default=0)  # Neues Feld für Erschwernis
     submit = SubmitField('Probe durchführen')
+
+class AttributProbeForm(FlaskForm):
+    attribut = SelectField('Attribut', choices=[
+        ('MU', 'Mut'), ('KL', 'Klugheit'), ('IN', 'Intuition'), ('CH', 'Charisma'),
+        ('FF', 'Fingerfertigkeit'), ('GE', 'Gewandtheit'), ('KO', 'Konstitution'), ('KK', 'Körperkraft')
+    ], validators=[DataRequired()])
+    w1 = IntegerField('Würfel (1-20)', validators=[NumberRange(min=1, max=20)])
+    erschwernis = IntegerField('Erschwernis', default=0)
+    submit = SubmitField('Attributprobe durchführen')
 
 class CombatSkillForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
@@ -471,34 +481,45 @@ def probe(character_id):
     
     s = select(Talent).where(Talent.character_id == character_id)
     talents = db.session.execute(s).scalars().all() 
-    #talents = Talent.query.filter_by(character_id=character_id).all()
     
     form = ProbeForm()
     form.talent_id.choices = [(t.id, t.name) for t in talents]
     
+    # Neues Formular für Attributproben
+    attr_form = AttributProbeForm()
+    
     result = None
     details = None
+    attr_result = None
+    attr_details = None
+    probe_type = "talent"  # Standard-Probentyp ist Talentprobe
     
     if not talents:
         flash('Füge zuerst ein Talent für diesen Charakter hinzu!', 'warning')
-        return redirect(url_for('character_talents', character_id=character_id))
+        # Obwohl keine Talente vorhanden sind, können immer noch Attributproben durchgeführt werden
     
     # Initialisiere mit Standardwerten, wenn keine Würfel gesetzt sind
     if not form.w1.data:
-        form.w1.data = 10  # Default-Wert
+        form.w1.data = 10
     if not form.w2.data:
-        form.w2.data = 10  # Default-Wert
+        form.w2.data = 10
     if not form.w3.data:
-        form.w3.data = 10  # Default-Wert
+        form.w3.data = 10
+    if not attr_form.w1.data:
+        attr_form.w1.data = 10
     
+    # Bestimme welche Art von Probe durchgeführt wird
     if request.method == 'POST':
-        # Speichere das ausgewählte Talent
-        selected_talent = request.form.get('talent_id')
-        if selected_talent:
-            form.talent_id.data = int(selected_talent)
+        probe_type = request.form.get('probe_type', 'talent')
         
-        # Wenn "Würfeln" geklickt wurde
-        if 'wuerfeln' in request.form:
+        # Speichere das ausgewählte Talent oder Attribut
+        if probe_type == 'talent':
+            selected_talent = request.form.get('talent_id')
+            if selected_talent:
+                form.talent_id.data = int(selected_talent)
+        
+        # Wenn "Würfeln" für Talentprobe geklickt wurde
+        if 'wuerfeln' in request.form and probe_type == 'talent':
             # Würfelwerte generieren
             w1 = random.randint(1, 20)
             w2 = random.randint(1, 20)
@@ -512,27 +533,47 @@ def probe(character_id):
             form.w2.data = w2
             form.w3.data = w3
             
-            # Debug-Ausgabe der Form-Daten
-            print(f"Form-Daten nach Setzen: w1={form.w1.data}, w2={form.w2.data}, w3={form.w3.data}")
-            
             # Flash-Nachricht zur Bestätigung
             flash(f'Gewürfelt: {w1}, {w2}, {w3}', 'info')
             
             # Kein validate_on_submit, sondern direkt das Template rendern
-            return render_template('probe.html', form=form, character=character, result=None, details=None)
+            return render_template('probe.html', 
+                                  form=form, 
+                                  attr_form=attr_form, 
+                                  character=character, 
+                                  result=None, 
+                                  details=None,
+                                  attr_result=None,
+                                  attr_details=None,
+                                  probe_type=probe_type)
+        
+        # Wenn "Würfeln" für Attributprobe geklickt wurde
+        elif 'attr_wuerfeln' in request.form:
+            # Würfelwert generieren
+            w1 = random.randint(1, 20)
+            
+            # Formular-Daten setzen
+            attr_form.w1.data = w1
+            
+            # Flash-Nachricht zur Bestätigung
+            flash(f'Gewürfelt: {w1}', 'info')
+            
+            return render_template('probe.html', 
+                                  form=form, 
+                                  attr_form=attr_form, 
+                                  character=character, 
+                                  result=None, 
+                                  details=None,
+                                  attr_result=None,
+                                  attr_details=None,
+                                  probe_type='attribut')
     
-    # Separate if-Anweisung für "Probe durchführen" (kein elif)
-    if form.validate_on_submit() and 'submit' in request.form:
+    # Talentprobe durchführen
+    if form.validate_on_submit() and 'submit' in request.form and probe_type == 'talent':
         talent = db.session.get(Talent, form.talent_id.data)
         if talent is None:
             flash('Talent nicht gefunden.', 'error')
             return redirect(url_for('character_talents', character_id=character_id))
-        
-        # Attribute abrufen
-        attr1_value = character.get_attribute(talent.attr1)
-        attr2_value = character.get_attribute(talent.attr2)
-        attr3_value = character.get_attribute(talent.attr3)
-        talent = db.session.get(Talent, form.talent_id.data)
         
         # Attribute abrufen
         attr1_value = character.get_attribute(talent.attr1)
@@ -553,12 +594,17 @@ def probe(character_id):
                     be_wert = character.be * int(be_faktor)
                 except ValueError:
                     be_wert = character.be  # Fallback wenn kein gültiger Faktor
-            
+        
+        # Erschwernis vom Talentwert abziehen
+        erschwernis = form.erschwernis.data or 0
         
         # Effektiver Talentwert berechnen (BE wird vom Talentwert abgezogen)
         effektiver_talentwert = talent.talentwert
         if talent.be_relevant and character.be > 0:
             effektiver_talentwert = max(0, talent.talentwert - be_wert)
+        
+        # Erschwernis vom effektiven Talentwert abziehen
+        effektiver_talentwert = max(0, effektiver_talentwert - erschwernis)
         
         # Differenzen berechnen
         diff1 = form.w1.data - attr1_value
@@ -597,6 +643,7 @@ def probe(character_id):
                 'be': character.be,
                 'be_faktor': be_faktor,
                 'be_wert': be_wert,
+                'erschwernis': erschwernis,
                 'is_critical': is_critical
             }
         else:
@@ -622,11 +669,56 @@ def probe(character_id):
                 'be': character.be,
                 'be_faktor': be_faktor,
                 'be_wert': be_wert,
+                'erschwernis': erschwernis,
                 'is_critical': is_critical
             }
     
-    return render_template('probe.html', form=form, character=character, result=result, details=details)
-
+    # Attributprobe durchführen
+    elif attr_form.validate_on_submit() and 'attr_submit' in request.form:
+        # Ausgewähltes Attribut und Wert abrufen
+        attribut = attr_form.attribut.data
+        attr_value = character.get_attribute(attribut)
+        erschwernis = attr_form.erschwernis.data or 0
+        
+        # Effektiver Attributwert berechnen (mit Erschwernis)
+        effektiver_attributwert = max(0, attr_value - erschwernis)
+        
+        # Würfelwert auswerten
+        wuerfel = attr_form.w1.data
+        
+        # Erfolg/Misserfolg ermitteln
+        if wuerfel <= effektiver_attributwert:
+            attr_result = True
+            # Prüfen auf kritischen Erfolg (1 gewürfelt)
+            is_critical = (wuerfel == 1)
+        else:
+            attr_result = False
+            # Prüfen auf kritischen Fehlschlag (20 gewürfelt)
+            is_critical = (wuerfel == 20)
+        
+        # Details zusammenfassen
+        attr_details = {
+            'attribut': attribut,
+            'attribut_name': dict(attr_form.attribut.choices).get(attribut),
+            'attr_value': attr_value,
+            'effektiver_attributwert': effektiver_attributwert,
+            'wuerfel': wuerfel,
+            'erschwernis': erschwernis,
+            'is_critical': is_critical,
+            'diff': wuerfel - effektiver_attributwert if wuerfel > effektiver_attributwert else effektiver_attributwert - wuerfel
+        }
+        
+        probe_type = 'attribut'
+    
+    return render_template('probe.html', 
+                          form=form, 
+                          attr_form=attr_form, 
+                          character=character, 
+                          result=result, 
+                          details=details,
+                          attr_result=attr_result,
+                          attr_details=attr_details,
+                          probe_type=probe_type)
 # Liste der Kampffähigkeiten für einen Charakter
 @app.route('/character/<int:character_id>/combat_skills')
 def character_combat_skills(character_id):
