@@ -38,6 +38,23 @@
             {% endif %}
           </div>
         </div>
+        
+        <div class="col-md-6">
+          <div class="form-group">
+            {{ form.magazine_count.label(class="form-label") }}
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+              {{ form.magazine_count(class="form-control") }}
+            </div>
+            {% if form.magazine_count.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.magazine_count.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
       </div>
       {% endif %}
       

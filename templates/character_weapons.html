@@ -111,15 +111,33 @@
                     {% endif %}
                     </small>
                   </div>
-                  <div class="mb-2">
-                    <div class="progress">
-                      {% set percent = (char_weapon.munition_aktuell / char_weapon.weapon.munition_max * 100) if char_weapon.weapon.munition_max > 0 else 0 %}
-                      <div class="progress-bar bg-info" role="progressbar" style="width: {{ percent }}%" 
-                           aria-valuenow="{{ char_weapon.munition_aktuell }}" aria-valuemin="0" aria-valuemax="{{ char_weapon.weapon.munition_max }}">
-                        {{ char_weapon.munition_aktuell }}/{{ char_weapon.weapon.munition_max }}
+                  
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <h6 class="text-muted mb-2">Aktuelles Magazin:</h6>
+                      <div class="progress">
+                        {% set percent = (char_weapon.munition_aktuell / char_weapon.weapon.munition_max * 100) if char_weapon.weapon.munition_max > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ percent }}%" 
+                             aria-valuenow="{{ char_weapon.munition_aktuell }}" aria-valuemin="0" aria-valuemax="{{ char_weapon.weapon.munition_max }}">
+                          {{ char_weapon.munition_aktuell }}/{{ char_weapon.weapon.munition_max }}
+                        </div>
                       </div>
                     </div>
+                    <div class="col-md-6">
+                      <h6 class="text-muted mb-2">Ersatzmagazine:</h6>
+                      <span class="badge bg-secondary">
+                        <i class="fas fa-boxes me-1"></i> {{ char_weapon.magazine_count }}
+                      </span>
+                    </div>
                   </div>
+                  
+                  {% if char_weapon.magazine_count > 0 and char_weapon.munition_aktuell < char_weapon.weapon.munition_max %}
+                    <div class="mb-3">
+                      <a href="{{ url_for('reload_ranged_weapon', link_id=char_weapon.id, return_to='weapons') }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-sync-alt me-1"></i> Nachladen
+                      </a>
+                    </div>
+                  {% endif %}
                 </div>
                 
                 <div class="d-flex justify-content-end">

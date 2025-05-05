@@ -13,7 +13,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dsa_proben.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-
+# TODO Weapontypes - Linking to Fighting Skills (1 - Weapon n types)
+# TODO CSV inject for Talents
+# TODO TalentDB like weapons or armor
+# TODO Combat window melee attack (when melee weapon equipt), etc
+# TODO Damage roll on a weapon (with bonus damage option)
+# TODO own hp bar + wounds ticker
+# TODO get x damage + check if getting wound (with rs override faktor)
+# TODO ini tracker + state tracker (lying, standing, crouching) & auto ini debuff
+# TODO Magic & chi
+# TODO baldurs gate 3 like combat rounds
 # Modelle
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -124,6 +133,7 @@ class CharacterMeleeWeapon(db.Model):
     weapon_id = db.Column(db.Integer, db.ForeignKey('melee_weapon.id'), nullable=False)
     equipped = db.Column(db.Boolean, default=False)
  
+# Add magazine_count to the CharacterRangedWeapon model
 class CharacterRangedWeapon(db.Model):
     __tablename__ = 'character_ranged_weapon'
     id = db.Column(db.Integer, primary_key=True)
@@ -132,6 +142,7 @@ class CharacterRangedWeapon(db.Model):
     equipped = db.Column(db.Boolean, default=False)
     # Zusätzliche charakterspezifische Attribute für die Waffe
     munition_aktuell = db.Column(db.Integer, default=0)  # Aktuelle Munition
+    magazine_count = db.Column(db.Integer, default=0)  # Anzahl zusätzlicher Magazine
 
 class CharacterParryWeapon(db.Model):
     __tablename__ = 'character_parry_weapon'
@@ -281,15 +292,18 @@ class ParryWeaponForm(FlaskForm):
     pa_mod = IntegerField('Parade-Modifikator', default=0)
     submit = SubmitField('Speichern')
 
-# Formulare für das Zuweisen von Waffen zu Charakteren
-class AssignWeaponForm(FlaskForm):
-    character_id = SelectField('Charakter', coerce=int, validators=[DataRequired()])
-    submit = SubmitField('Waffe zuweisen')
-
+# Update the CharacterWeaponForm to include magazine_count
 class CharacterWeaponForm(FlaskForm):
     munition_aktuell = IntegerField('Aktuelle Munition', validators=[NumberRange(min=0)], default=0)
+    magazine_count = IntegerField('Anzahl Magazine', validators=[NumberRange(min=0)], default=0)
     equipped = BooleanField('Ausgerüstet')
     submit = SubmitField('Speichern')
+
+# Update the AssignWeaponForm for ranged weapons
+class AssignWeaponForm(FlaskForm):
+    character_id = SelectField('Charakter', coerce=int, validators=[DataRequired()])
+    magazine_count = IntegerField('Anzahl Magazine', validators=[NumberRange(min=0)], default=0)
+    submit = SubmitField('Waffe zuweisen')
 
 # Rüstungsformular
 class ArmorForm(FlaskForm):
@@ -789,7 +803,6 @@ def combat_probe(character_id):
     if character is None:
         abort(404)
     
-    
     form = CombatProbeForm()
 
     s = select(CombatSkill).where(CombatSkill.character_id == character_id)
@@ -799,7 +812,6 @@ def combat_probe(character_id):
     
     result = None
     details = None
-    
     
     if not combat_skills:
         flash('Füge zuerst eine Kampffähigkeit für diesen Charakter hinzu!', 'warning')
@@ -826,87 +838,125 @@ def combat_probe(character_id):
                                 details=None)
     
     if form.validate_on_submit() and 'submit' in request.form:
-        skill = db.session.get(CombatSkill, skill)
+        skill = db.session.get(CombatSkill, form.skill_id.data)
         if not skill:
             flash('Kampffähigkeit nicht gefunden', 'error')
             return redirect(url_for('combat_probe', character_id=character_id))
         
-        typ = ""
-        # Basiswert bestimmen (Angriff oder Parade)
+        # Prüfen auf ausgerüstete Fernkampfwaffe und Munition (für Angriffe)
+        has_ammo = True
+        equipped_ranged_weapon = None
+        
         if form.wert_typ.data == 'attacke':
-            basiswert = skill.attack
-            typ = "Angriff"
-        else:
-            basiswert = skill.parade
-            typ = "Verteidigung"
+            # Suche nach ausgerüsteter Fernkampfwaffe
+            equipped_ranged_weapon = CharacterRangedWeapon.query.filter_by(
+                character_id=character_id,
+                equipped=True
+            ).first()
+            
+            if equipped_ranged_weapon:
+                # Prüfen, ob Munition verfügbar ist
+                if equipped_ranged_weapon.munition_aktuell <= 0:
+                    has_ammo = False
+                    flash('Keine Munition im aktuellen Magazin!', 'danger')
         
-        # BE-Berechnung
-        be_wert = 0
-        be_faktor = skill.be_faktor or "1"
-        if skill.be_relevant and character.be > 0:
-            if be_faktor.startswith(('+', '-')):
-                try:
-                    be_wert = max(0,character.be + int(be_faktor))
-                except ValueError:
-                    be_wert = character.be
+        if has_ammo:
+            typ = ""
+            # Basiswert bestimmen (Angriff oder Parade)
+            if form.wert_typ.data == 'attacke':
+                basiswert = skill.attack
+                typ = "Angriff"
             else:
-                try:
-                    be_wert = character.be * int(be_faktor)
-                except ValueError:
-                    be_wert = character.be
-        
-        # Effektiver Basiswert
-        effektiv_basis = max(0, basiswert - be_wert)
-        
-        # Erschwernis verarbeiten
-        erschwernis = form.erschwernis.data or 0
-        effektiver_wert = max(0, effektiv_basis - erschwernis)
-        
-        # Probe auswerten
-        wuerfel = form.w1.data
-        success = wuerfel <= effektiver_wert
-        
+                basiswert = skill.parade
+                typ = "Verteidigung"
+            
+            # BE-Berechnung
+            be_wert = 0
+            be_faktor = skill.be_faktor or "1"
+            if skill.be_relevant and character.be > 0:
+                if be_faktor.startswith(('+', '-')):
+                    try:
+                        be_wert = max(0,character.be + int(be_faktor))
+                    except ValueError:
+                        be_wert = character.be
+                else:
+                    try:
+                        be_wert = character.be * int(be_faktor)
+                    except ValueError:
+                        be_wert = character.be
+            
+            # Effektiver Basiswert
+            effektiv_basis = max(0, basiswert - be_wert)
+            
+            # Erschwernis verarbeiten
+            erschwernis = form.erschwernis.data or 0
+            effektiver_wert = max(0, effektiv_basis - erschwernis)
+            
+            # Probe auswerten
+            wuerfel = form.w1.data
+            success = wuerfel <= effektiver_wert
+            
+            # Kritische Ergebnisse
+            is_critical_success = wuerfel == 1
+            is_critical_failure = wuerfel == 20
+            
+            if is_critical_failure:
+                wuerfel = random.randint(1,20)
+                is_critical_failure = wuerfel > effektiver_wert
+            else:
+                is_critical_failure = False 
 
-        # Kritische Ergebnisse
-        is_critical_success = wuerfel == 1
-        is_critical_failure = wuerfel == 20
-        
-        if is_critical_failure:
-            wuerfel = random.randint(1,20)
-            is_critical_failure = wuerfel > effektiver_wert
+            if is_critical_success:
+                wuerfel = random.randint(1,20)
+                is_critical_success = wuerfel <= effektiver_wert
+            else:
+                is_critical_success = False
+
+            details = {
+                'skill': skill,
+                'wert_typ': typ,
+                'erschwernis': erschwernis,
+                'wuerfel': wuerfel,
+                "diff": effektiver_wert
+            }
+            
+            result = {
+                'success': success,
+                'message': 'Erfolg!' if success else 'Fehlschlag!',
+                'is_critical': is_critical_success or is_critical_failure
+            }
+            
+            # Wenn erfolgreicher Angriff mit Fernkampfwaffe, Munition reduzieren
+            if success and form.wert_typ.data == 'attacke' and equipped_ranged_weapon:
+                equipped_ranged_weapon.munition_aktuell -= 1
+                db.session.commit()
+                
+                # Nachricht über verbleibende Munition
+                if equipped_ranged_weapon.munition_aktuell <= 0:
+                    flash(f'Letzte Kugel verschossen! Magazin ist leer.', 'warning')
+                elif equipped_ranged_weapon.munition_aktuell <= 3:
+                    flash(f'Nur noch {equipped_ranged_weapon.munition_aktuell} Schuss im Magazin!', 'warning')
         else:
-            is_critical_failure = False 
-
-        if is_critical_success:
-            wuerfel = random.randint(1,20)
-            is_critical_success = wuerfel <= effektiver_wert
-        else:
-            is_critical_success = False
-
-
-        details = {
-            'skill': skill,
-            'wert_typ': typ,
-            'erschwernis': erschwernis,
-            'wuerfel': wuerfel,
-            "diff": effektiver_wert
-
-        }
-        
-        result = {
-            'success': success,
-            'message': 'Erfolg!' if success else 'Fehlschlag!',
-            'is_critical': is_critical_success or is_critical_failure
-        }
+            # Kein Angriff möglich wegen fehlender Munition
+            result = {
+                'success': False,
+                'message': 'Fehlschlag: Keine Munition!',
+                'is_critical': False
+            }
+            
+            details = {
+                'skill': skill,
+                'wert_typ': 'Angriff',
+                'erschwernis': 0,
+                'wuerfel': 0,
+                'diff': 0
+            }
     
     return render_template('combat_probe.html',
                          form=form,
                          character=character,
                          result=result,
                          details=details)
-
-
-# Überarbeitete Waffen-Routen für app.py
 
 # Allgemeine Waffendatenbank
 @app.route('/weapons')
@@ -920,7 +970,6 @@ def all_weapons():
                            ranged_weapons=ranged_weapons,
                            parry_weapons=parry_weapons)
 
-# Charakterspezifische Waffenübersicht
 @app.route('/character/<int:character_id>/weapons')
 def character_weapons(character_id):
     character = db.session.get(Character, character_id)
@@ -943,6 +992,7 @@ def character_weapons(character_id):
                      .join(ParryWeapon, CharacterParryWeapon.weapon_id == ParryWeapon.id)
                      .all())
     
+    # Make sure we're using the correct template
     return render_template('character_weapons.html', 
                            character=character,
                            melee_weapons=melee_weapons,
@@ -1210,11 +1260,13 @@ def assign_ranged_weapon(weapon_id):
         # Neue Verknüpfung erstellen
         equipped = request.form.get('equipped') == 'on'
         munition_aktuell = request.form.get('munition_aktuell', type=int) or 0
+        magazine_count = request.form.get('magazine_count', type=int) or 0  # Add this line
         
         char_weapon = CharacterRangedWeapon(
             character_id=character_id,
             weapon_id=weapon_id,
             munition_aktuell=munition_aktuell,
+            magazine_count=magazine_count,  # Add this line
             equipped=equipped
         )
         
@@ -1231,6 +1283,40 @@ def assign_ranged_weapon(weapon_id):
                           weapon=weapon, 
                           weapon_type='ranged',
                           assigned_chars=assigned_chars)
+
+# Updated reload functionality with return_to parameter
+@app.route('/character_weapon/ranged/<int:link_id>/reload')
+def reload_ranged_weapon(link_id):
+    char_weapon = db.session.get(CharacterRangedWeapon, link_id)
+    if char_weapon is None:
+        abort(404)
+    
+    weapon = db.session.get(RangedWeapon, char_weapon.weapon_id)
+    character = db.session.get(Character, char_weapon.character_id)
+    
+    # Get the return URL from query parameters, default to inventory
+    return_to = request.args.get('return_to', 'inventory')
+    
+    # Check if there's ammunition in the current magazine
+    if char_weapon.munition_aktuell == weapon.munition_max:
+        flash(f'Das Magazin von "{weapon.name}" ist bereits voll!', 'warning')
+    # Check if there are spare magazines
+    elif char_weapon.magazine_count <= 0:
+        flash(f'Keine Ersatzmagazine für "{weapon.name}" vorhanden!', 'danger')
+    else:
+        # Perform the reload
+        char_weapon.magazine_count -= 1
+        char_weapon.munition_aktuell = weapon.munition_max
+        db.session.commit()
+        flash(f'Magazin von "{weapon.name}" gewechselt! Noch {char_weapon.magazine_count} Ersatzmagazine verfügbar.', 'success')
+    
+    # Redirect based on the return_to parameter
+    if return_to == 'combat':
+        return redirect(url_for('combat_probe', character_id=character.id))
+    elif return_to == 'weapons':
+        return redirect(url_for('character_weapons', character_id=character.id))
+    else:  # Default to inventory
+        return redirect(url_for('character_inventory', character_id=character.id))
 
 @app.route('/character_weapon/ranged/<int:link_id>/toggle-equip')
 def toggle_equip_ranged(link_id):
@@ -1264,6 +1350,7 @@ def edit_character_ranged_weapon(link_id):
     
     if form.validate_on_submit():
         char_weapon.munition_aktuell = form.munition_aktuell.data
+        char_weapon.magazine_count = form.magazine_count.data  # Add this line
         char_weapon.equipped = form.equipped.data
         
         db.session.commit()
@@ -1278,6 +1365,7 @@ def edit_character_ranged_weapon(link_id):
                           is_ranged=True,
                           is_parry=False,
                           title='Fernkampfwaffe bearbeiten')
+
 
 @app.route('/character_weapon/ranged/<int:link_id>/remove')
 def remove_character_ranged_weapon(link_id):

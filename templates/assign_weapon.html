@@ -124,6 +124,14 @@
               <span class="input-group-text">/ {{ weapon.munition_max }}</span>
             </div>
           </div>
+          
+          <div class="form-group mb-3">
+            <label class="form-label">Anzahl Magazine</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+              <input type="number" name="magazine_count" class="form-control" value="0" min="0">
+            </div>
+          </div>
           {% endif %}
           
           <div class="form-check mb-3">
@@ -148,6 +156,7 @@
               <th>Charakter</th>
               {% if weapon_type == 'ranged' %}
               <th>Munition</th>
+              <th>Magazine</th>
               {% endif %}
               <th>Status</th>
             </tr>
@@ -158,6 +167,7 @@
               <td>{{ char_link.character.name }}</td>
               {% if weapon_type == 'ranged' %}
               <td>{{ char_link.munition_aktuell }}/{{ weapon.munition_max }}</td>
+              <td>{{ char_link.magazine_count }}</td>
               {% endif %}
               <td>{% if char_link.equipped %}<span class="badge bg-success">Ausgerüstet</span>{% else %}<span class="badge bg-secondary">Im Inventar</span>{% endif %}</td>
             </tr>

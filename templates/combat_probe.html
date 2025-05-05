@@ -11,6 +11,53 @@
   </div>
 </div>
 
+<!-- Aktuelle Fernkampfwaffe anzeigen, wenn vorhanden -->
+{% set equipped_ranged = character.ranged_weapon_links|selectattr('equipped', 'eq', true)|list %}
+{% if equipped_ranged %}
+  {% set ranged_weapon = equipped_ranged[0] %}
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0"><i class="fas fa-bow-arrow me-2"></i>Ausgerüstete Fernkampfwaffe: {{ ranged_weapon.weapon.name }}</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <h6>Munition:</h6>
+          <div class="d-flex align-items-center">
+            <div class="progress flex-grow-1 me-2" style="height: 20px;">
+              {% set percent = (ranged_weapon.munition_aktuell / ranged_weapon.weapon.munition_max * 100) if ranged_weapon.weapon.munition_max > 0 else 0 %}
+              <div class="progress-bar {% if ranged_weapon.munition_aktuell == 0 %}bg-danger{% elif ranged_weapon.munition_aktuell <= 3 %}bg-warning{% else %}bg-info{% endif %}" 
+                   role="progressbar" style="width: {{ percent }}%" 
+                   aria-valuenow="{{ ranged_weapon.munition_aktuell }}" aria-valuemin="0" aria-valuemax="{{ ranged_weapon.weapon.munition_max }}">
+                {{ ranged_weapon.munition_aktuell }}/{{ ranged_weapon.weapon.munition_max }}
+              </div>
+            </div>
+            {% if ranged_weapon.magazine_count > 0 and ranged_weapon.munition_aktuell < ranged_weapon.weapon.munition_max %}
+            <a href="{{ url_for('reload_ranged_weapon', link_id=ranged_weapon.id, return_to='combat') }}" class="btn btn-info btn-sm">
+              <i class="fas fa-sync-alt me-1"></i> Nachladen
+            </a>
+            {% elif ranged_weapon.magazine_count > 0 %}
+            <button class="btn btn-secondary btn-sm" disabled>
+              <i class="fas fa-check me-1"></i> Magazin voll
+            </button>
+            {% else %}
+            <button class="btn btn-secondary btn-sm" disabled>
+              <i class="fas fa-sync-alt me-1"></i> Keine Magazine
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <h6>Ersatzmagazine:</h6>
+          <span class="badge {% if ranged_weapon.magazine_count > 0 %}bg-info{% else %}bg-danger{% endif %} p-2">
+            <i class="fas fa-boxes me-1"></i> {{ ranged_weapon.magazine_count }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
 <form method="POST">
   {{ form.hidden_tag() }}
   <div class="card mb-4">
@@ -29,16 +76,21 @@
             <span class="input-group-text"><i class="fas fa-dice-three"></i></span>
             <input type="number" name="w1" class="form-control" min="1" max="20" value="{{ form.w1.data or '' }}">
         </div>
-    </div>
+      </div>
       <div class="mb-3">
         {{ form.erschwernis.label(class="form-label") }}
         {{ form.erschwernis(class="form-control") }}
       </div>
       <div class="d-flex justify-content-between">
         <button type="submit" name="wuerfeln" value="1" class="btn btn-secondary">
-                        <i class="fas fa-random me-1"></i> Würfeln
-                    </button>
-        <button type="submit" name="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+          <i class="fas fa-random me-1"></i> Würfeln
+        </button>
+        <button type="submit" name="submit" class="btn btn-primary" 
+          {% if equipped_ranged and form.wert_typ.data == 'attacke' and ranged_weapon.munition_aktuell <= 0 %}
+            disabled title="Keine Munition für den Angriff!"
+          {% endif %}>
+          {{ form.submit.label.text }}
+        </button>
       </div>
     </div>
   </div>
@@ -69,7 +121,17 @@
       <dt class="col-sm-4">Typ</dt><dd class="col-sm-8">{{ details.wert_typ }}</dd>
       <dt class="col-sm-4">Erschwernis</dt><dd class="col-sm-8">{{ details.erschwernis }}</dd>
       <dt class="col-sm-4">Übrige Punkte</dt><dd class="col-sm-8">{{ details.diff}}</dd>
-
+      
+      {% if equipped_ranged and details.wert_typ == "Angriff" and result.success %}
+        <dt class="col-sm-4">Munition verbraucht</dt>
+        <dd class="col-sm-8">
+          {% if ranged_weapon.munition_aktuell > 0 %}
+            1 Schuss (noch {{ ranged_weapon.munition_aktuell }} übrig)
+          {% else %}
+            Magazin leer!
+          {% endif %}
+        </dd>
+      {% endif %}
     </dl>
   </div>
 </div>
